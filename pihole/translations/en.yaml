@@ -1,0 +1,37 @@
+configuration:
+  dns1:
+    name: Primary DNS
+    description: Primary upstream DNS server for Pi-hole to forward queries to.
+  dns2:
+    name: Secondary DNS
+    description: Secondary upstream DNS server (optional).
+  web_password:
+    name: Web Password
+    description: >-
+      Password for the Pi-hole web admin interface. Leave empty to rely on
+      Home Assistant authentication via ingress.
+  dnssec:
+    name: DNSSEC
+    description: Enable DNSSEC validation for DNS queries.
+  conditional_forwarding:
+    name: Conditional Forwarding
+    description: >-
+      Enable conditional forwarding to allow Pi-hole to resolve local
+      hostnames via your router.
+  conditional_forwarding_ip:
+    name: Router IP
+    description: IP address of your local router for conditional forwarding.
+  conditional_forwarding_domain:
+    name: Local Domain
+    description: Local domain name for conditional forwarding (e.g., "lan" or "home").
+  conditional_forwarding_cidr:
+    name: Local Network CIDR
+    description: >-
+      Local network in CIDR notation for reverse DNS lookups
+      (e.g., "192.168.1.0/24").
+  interface:
+    name: Network Interface
+    description: Network interface for Pi-hole to listen on.
+  query_logging:
+    name: Query Logging
+    description: Enable logging of DNS queries.

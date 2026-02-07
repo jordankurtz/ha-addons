@@ -1,0 +1,53 @@
+name: PiAware
+version: "1.0.0"
+slug: piaware
+description: ADS-B receiver with PiAware, dump1090-fa, and SkyAware
+url: https://github.com/jordankurtz/ha-addons
+arch:
+  - amd64
+  - aarch64
+  - armv7
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:airplane
+panel_title: SkyAware
+startup: application
+init: false
+usb: true
+uart: true
+full_access: true
+map:
+  - type: data
+    read_only: false
+ports:
+  8080/tcp: null
+  30003/tcp: 30003
+  30005/tcp: 30005
+  30105/tcp: 30105
+ports_description:
+  8080/tcp: SkyAware web map (handled by ingress)
+  30003/tcp: SBS BaseStation format output
+  30005/tcp: Beast protocol output
+  30105/tcp: MLAT results (Beast format)
+options:
+  feeder_id: ""
+  latitude: 0.0
+  longitude: 0.0
+  altitude_ft: 0
+  receiver_type: rtlsdr
+  gain: "max"
+  allow_mlat: true
+  allow_modeac: true
+  rtlsdr_ppm: 0
+  rtlsdr_device_serial: ""
+schema:
+  feeder_id: str?
+  latitude: float
+  longitude: float
+  altitude_ft: int?
+  receiver_type: list(rtlsdr|relay)
+  gain: str
+  allow_mlat: bool
+  allow_modeac: bool
+  rtlsdr_ppm: int?
+  rtlsdr_device_serial: str?

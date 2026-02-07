@@ -1,0 +1,44 @@
+configuration:
+  feeder_id:
+    name: Feeder ID
+    description: >-
+      FlightAware feeder UUID. Leave empty to auto-generate on first run.
+      Your feeder ID will be saved and reused across restarts.
+  latitude:
+    name: Latitude
+    description: Receiver latitude in decimal degrees (e.g., 40.7128).
+  longitude:
+    name: Longitude
+    description: Receiver longitude in decimal degrees (e.g., -74.0060).
+  altitude_ft:
+    name: Altitude (feet)
+    description: Antenna altitude in feet above mean sea level.
+  receiver_type:
+    name: Receiver Type
+    description: >-
+      Type of ADS-B receiver. Use "rtlsdr" for USB RTL-SDR dongles,
+      or "relay" to relay data from another receiver.
+  gain:
+    name: Gain
+    description: >-
+      RTL-SDR gain setting. Use "max" for maximum gain, "auto" for
+      automatic gain control, or a numeric dB value.
+  allow_mlat:
+    name: Enable MLAT
+    description: >-
+      Enable multilateration. Allows FlightAware to calculate positions
+      of aircraft that don't broadcast ADS-B by correlating your data
+      with nearby receivers.
+  allow_modeac:
+    name: Enable Mode A/C
+    description: Enable reception of legacy Mode A/C transponder signals.
+  rtlsdr_ppm:
+    name: PPM Correction
+    description: >-
+      Frequency correction in parts per million for your RTL-SDR dongle.
+      Set to 0 if unsure.
+  rtlsdr_device_serial:
+    name: RTL-SDR Serial
+    description: >-
+      Specific RTL-SDR device serial number. Only needed if you have
+      multiple RTL-SDR dongles connected.

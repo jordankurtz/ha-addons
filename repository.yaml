@@ -1,0 +1,4 @@
+channel: stable
+name: Jordan's Home Assistant Add-ons
+url: https://github.com/jordankurtz/ha-addons
+maintainer: Jordan Kurtz

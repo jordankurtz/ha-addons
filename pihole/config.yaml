@@ -1,0 +1,54 @@
+name: Pi-hole
+version: "1.0.0"
+slug: pihole
+description: Network-wide ad blocking via your own DNS server
+url: https://github.com/jordankurtz/ha-addons
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - armhf
+  - i386
+host_network: true
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:shield-check
+panel_title: Pi-hole
+startup: system
+init: false
+privileged:
+  - NET_ADMIN
+  - NET_RAW
+map:
+  - type: data
+    read_only: false
+ports:
+  53/tcp: 53
+  53/udp: 53
+  80/tcp: null
+ports_description:
+  53/tcp: DNS (TCP)
+  53/udp: DNS (UDP)
+  80/tcp: Web interface (handled by ingress)
+options:
+  dns1: "8.8.8.8"
+  dns2: "8.8.4.4"
+  web_password: ""
+  dnssec: false
+  conditional_forwarding: false
+  conditional_forwarding_ip: ""
+  conditional_forwarding_domain: ""
+  conditional_forwarding_cidr: ""
+  interface: "eth0"
+  query_logging: true
+schema:
+  dns1: str
+  dns2: str?
+  web_password: str?
+  dnssec: bool
+  conditional_forwarding: bool
+  conditional_forwarding_ip: str?
+  conditional_forwarding_domain: str?
+  conditional_forwarding_cidr: str?
+  interface: str?
+  query_logging: bool
