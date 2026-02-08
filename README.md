@@ -12,6 +12,15 @@ and persistent configuration.
 
 [Documentation](pihole/DOCS.md)
 
+### Unbound
+
+Recursive DNS resolver with DNSSEC validation. Unbound resolves queries
+directly from root DNS servers without relying on any third-party DNS
+provider, providing maximum privacy. Pairs with Pi-hole for ad blocking
+with recursive resolution behind it.
+
+[Documentation](unbound/DOCS.md)
+
 ### PiAware
 
 Full ADS-B receiver stack with PiAware (FlightAware feeder), dump1090-fa

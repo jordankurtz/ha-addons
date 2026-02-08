@@ -1,0 +1,58 @@
+configuration:
+  query_logging:
+    name: Query Logging
+    description: >-
+      Log every DNS query and reply. Useful for debugging but increases
+      log volume. Visible in the add-on log tab.
+  dnssec:
+    name: DNSSEC
+    description: Enable DNSSEC validation to verify DNS response authenticity.
+  verbosity:
+    name: Log Verbosity
+    description: >-
+      Unbound log verbosity level (0 = errors only, 1 = operational info,
+      2 = detailed, 3-5 = debug).
+  num_threads:
+    name: Worker Threads
+    description: Number of threads to use for serving DNS queries.
+  msg_cache_size:
+    name: Message Cache Size
+    description: >-
+      Size of the message cache (e.g., "8m" for 8 megabytes). Stores DNS
+      response metadata.
+  rrset_cache_size:
+    name: RRset Cache Size
+    description: >-
+      Size of the RRset cache (e.g., "16m" for 16 megabytes). Should be
+      roughly twice the message cache size.
+  forwarding_enabled:
+    name: Forwarding Mode
+    description: >-
+      Forward queries to upstream DNS servers instead of resolving
+      recursively from root servers.
+  forward_tls:
+    name: DNS-over-TLS
+    description: >-
+      Use DNS-over-TLS when forwarding to upstream servers. Requires
+      forwarding mode to be enabled.
+  forward_servers:
+    name: Forward Servers
+    description: >-
+      List of upstream DNS servers for forwarding mode (e.g.,
+      "8.8.8.8", "1.1.1.1"). For DNS-over-TLS, use "IP@853#hostname"
+      format.
+  access_control:
+    name: Access Control
+    description: >-
+      List of network ACL rules (e.g., "192.168.1.0/24 allow",
+      "0.0.0.0/0 allow"). Controls which clients can query Unbound.
+  listen_port:
+    name: Listen Port
+    description: >-
+      Port for Unbound to listen on. Use 53 for standalone or 5335
+      when running behind Pi-hole.
+  custom_server_config:
+    name: Custom Server Config
+    description: >-
+      Raw configuration lines to append to the Unbound server block.
+      For advanced users who need settings not exposed as options.

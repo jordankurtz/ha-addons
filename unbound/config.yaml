@@ -1,0 +1,57 @@
+name: Unbound
+version: "1.0.0"
+slug: unbound
+description: Recursive DNS resolver with DNSSEC validation
+url: https://github.com/jordankurtz/ha-addons
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - armhf
+  - i386
+host_network: true
+startup: system
+init: false
+privileged:
+  - NET_ADMIN
+  - NET_RAW
+map:
+  - type: data
+    read_only: false
+ports:
+  53/tcp: 53
+  53/udp: 53
+ports_description:
+  53/tcp: DNS (TCP)
+  53/udp: DNS (UDP)
+options:
+  dnssec: true
+  verbosity: 1
+  num_threads: 1
+  msg_cache_size: "8m"
+  rrset_cache_size: "16m"
+  forwarding_enabled: false
+  forward_tls: false
+  forward_servers:
+    - "8.8.8.8"
+    - "8.8.4.4"
+  access_control:
+    - "0.0.0.0/0 allow"
+  query_logging: false
+  listen_port: 53
+  custom_server_config: ""
+schema:
+  query_logging: bool
+  dnssec: bool
+  verbosity: "int(0,5)"
+  num_threads: "int(1,16)"
+  msg_cache_size: str
+  rrset_cache_size: str
+  forwarding_enabled: bool
+  forward_tls: bool
+  forward_servers:
+    - str
+  access_control:
+    - str
+  listen_port: int
+  custom_server_config: str?
