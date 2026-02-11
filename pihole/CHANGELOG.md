@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Listen on all interfaces by default
+- Run gravity update on startup to initialize blocklists
+
 ## 1.0.0
 
 - Initial release
