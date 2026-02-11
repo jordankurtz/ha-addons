@@ -1,0 +1,79 @@
+name: Build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      pihole: ${{ steps.filter.outputs.pihole }}
+      piaware: ${{ steps.filter.outputs.piaware }}
+      unbound: ${{ steps.filter.outputs.unbound }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            pihole:
+              - 'pihole/**'
+            piaware:
+              - 'piaware/**'
+            unbound:
+              - 'unbound/**'
+
+  build-pihole:
+    name: Build Pi-hole
+    needs: changes
+    if: needs.changes.outputs.pihole == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: pihole
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            PIHOLE_VERSION=2025.03.0
+
+  build-piaware:
+    name: Build PiAware
+    needs: changes
+    if: needs.changes.outputs.piaware == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: piaware
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            DUMP1090_VERSION=v9.0
+            PIAWARE_BUILDER_VERSION=v9.0.1
+
+  build-unbound:
+    name: Build Unbound
+    needs: changes
+    if: needs.changes.outputs.unbound == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: unbound
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
