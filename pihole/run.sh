@@ -192,6 +192,13 @@ trap 'bashio::log.info "Shutting down..."; kill ${NGINX_PID} 2>/dev/null; kill $
 pihole-FTL no-daemon &
 FTL_PID=$!
 
+# Wait for FTL to initialize, then update gravity
+sleep 5
+if kill -0 "${FTL_PID}" 2>/dev/null; then
+    bashio::log.info "Updating Pi-hole gravity (blocklists)..."
+    pihole -g || bashio::log.warning "Gravity update failed"
+fi
+
 # Wait for any process to exit
 wait -n ${NGINX_PID} ${FTL_PID}
 bashio::log.warning "Process exited, shutting down add-on..."
