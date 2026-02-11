@@ -5,10 +5,14 @@ on:
     branches: [main]
   push:
     branches: [main]
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   changes:
     name: Detect changes
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       pihole: ${{ steps.filter.outputs.pihole }}
@@ -77,3 +81,102 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+
+  check-updates:
+    name: Check dependency updates
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for dependency updates
+        id: updates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Read current versions from build.yaml (source of truth)
+          current_pihole=$(grep 'PIHOLE_VERSION:' pihole/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+          current_dump1090=$(grep 'DUMP1090_VERSION:' piaware/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+          current_piaware=$(grep 'PIAWARE_BUILDER_VERSION:' piaware/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+
+          echo "Current versions:"
+          echo "  Pi-hole: $current_pihole"
+          echo "  dump1090: $current_dump1090"
+          echo "  PiAware: $current_piaware"
+
+          # Fetch latest release tags
+          latest_pihole=$(gh api repos/pi-hole/docker-pi-hole/releases/latest --jq '.tag_name')
+          latest_dump1090=$(gh api repos/flightaware/dump1090/releases/latest --jq '.tag_name')
+          latest_piaware=$(gh api repos/flightaware/piaware_builder/releases/latest --jq '.tag_name')
+
+          echo "Latest versions:"
+          echo "  Pi-hole: $latest_pihole"
+          echo "  dump1090: $latest_dump1090"
+          echo "  PiAware: $latest_piaware"
+
+          if [ -z "$latest_pihole" ] || [ -z "$latest_dump1090" ] || [ -z "$latest_piaware" ]; then
+            echo "::error::Failed to fetch one or more latest versions"
+            exit 1
+          fi
+
+          # Compare and build update summary
+          updates=""
+          title_parts=""
+          has_updates=false
+
+          if [ "$current_pihole" != "$latest_pihole" ]; then
+            has_updates=true
+            updates="${updates}- **Pi-hole**: \`${current_pihole}\` → \`${latest_pihole}\`\n"
+            title_parts="${title_parts}Pi-hole to ${latest_pihole}, "
+            sed -i "s/PIHOLE_VERSION: \"${current_pihole}\"/PIHOLE_VERSION: \"${latest_pihole}\"/" pihole/build.yaml
+            sed -i "s/ARG PIHOLE_VERSION=${current_pihole}/ARG PIHOLE_VERSION=${latest_pihole}/" pihole/Dockerfile
+            sed -i "s/PIHOLE_VERSION=${current_pihole}/PIHOLE_VERSION=${latest_pihole}/" .github/workflows/build.yml
+          fi
+
+          if [ "$current_dump1090" != "$latest_dump1090" ]; then
+            has_updates=true
+            updates="${updates}- **dump1090**: \`${current_dump1090}\` → \`${latest_dump1090}\`\n"
+            title_parts="${title_parts}dump1090 to ${latest_dump1090}, "
+            sed -i "s/DUMP1090_VERSION: \"${current_dump1090}\"/DUMP1090_VERSION: \"${latest_dump1090}\"/" piaware/build.yaml
+            sed -i "s/ARG DUMP1090_VERSION=${current_dump1090}/ARG DUMP1090_VERSION=${latest_dump1090}/" piaware/Dockerfile
+            sed -i "s/DUMP1090_VERSION=${current_dump1090}/DUMP1090_VERSION=${latest_dump1090}/" .github/workflows/build.yml
+          fi
+
+          if [ "$current_piaware" != "$latest_piaware" ]; then
+            has_updates=true
+            updates="${updates}- **PiAware**: \`${current_piaware}\` → \`${latest_piaware}\`\n"
+            title_parts="${title_parts}PiAware to ${latest_piaware}, "
+            sed -i "s/PIAWARE_BUILDER_VERSION: \"${current_piaware}\"/PIAWARE_BUILDER_VERSION: \"${latest_piaware}\"/" piaware/build.yaml
+            sed -i "s/ARG PIAWARE_BUILDER_VERSION=${current_piaware}/ARG PIAWARE_BUILDER_VERSION=${latest_piaware}/" piaware/Dockerfile
+            sed -i "s/PIAWARE_BUILDER_VERSION=${current_piaware}/PIAWARE_BUILDER_VERSION=${latest_piaware}/" .github/workflows/build.yml
+          fi
+
+          echo "has_updates=$has_updates" >> "$GITHUB_OUTPUT"
+
+          if [ "$has_updates" = true ]; then
+            title_parts="${title_parts%, }"
+            pr_title="Update ${title_parts}"
+            echo "pr_title=${pr_title}" >> "$GITHUB_OUTPUT"
+            echo "commit_message=${pr_title}" >> "$GITHUB_OUTPUT"
+
+            {
+              echo "pr_body<<EOF"
+              echo "## Dependency Updates"
+              echo ""
+              echo -e "$updates"
+              echo "---"
+              echo "*This PR was created automatically by the dependency update checker.*"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: peter-evans/create-pull-request@v7
+        if: steps.updates.outputs.has_updates == 'true'
+        with:
+          branch: auto-update-dependencies
+          title: ${{ steps.updates.outputs.pr_title }}
+          body: ${{ steps.updates.outputs.pr_body }}
+          commit-message: ${{ steps.updates.outputs.commit_message }}
