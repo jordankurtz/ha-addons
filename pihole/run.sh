@@ -56,6 +56,7 @@ if [ -n "${dns2}" ]; then
 fi
 
 export FTLCONF_dns_interface="${interface}"
+export FTLCONF_dns_listeningMode="all"
 
 if [ -n "${web_password}" ]; then
     export FTLCONF_webserver_api_password="${web_password}"
