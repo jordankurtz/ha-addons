@@ -2,8 +2,8 @@ ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
 
 FROM ${BUILD_FROM}
 
-ARG PIAWARE_BUILDER_VERSION=v9.0.1
-ARG DUMP1090_VERSION=v9.0
+ARG PIAWARE_BUILDER_VERSION=v10.2
+ARG DUMP1090_VERSION=v10.2
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
