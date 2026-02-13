@@ -89,7 +89,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      workflows: write
     steps:
       - uses: actions/checkout@v4
 
@@ -135,7 +134,6 @@ jobs:
             title_parts="${title_parts}Pi-hole to ${latest_pihole}, "
             sed -i "s/PIHOLE_VERSION: \"${current_pihole}\"/PIHOLE_VERSION: \"${latest_pihole}\"/" pihole/build.yaml
             sed -i "s/ARG PIHOLE_VERSION=${current_pihole}/ARG PIHOLE_VERSION=${latest_pihole}/" pihole/Dockerfile
-            sed -i "s/PIHOLE_VERSION=${current_pihole}/PIHOLE_VERSION=${latest_pihole}/" .github/workflows/build.yml
           fi
 
           if [ "$current_dump1090" != "$latest_dump1090" ]; then
@@ -144,7 +142,6 @@ jobs:
             title_parts="${title_parts}dump1090 to ${latest_dump1090}, "
             sed -i "s/DUMP1090_VERSION: \"${current_dump1090}\"/DUMP1090_VERSION: \"${latest_dump1090}\"/" piaware/build.yaml
             sed -i "s/ARG DUMP1090_VERSION=${current_dump1090}/ARG DUMP1090_VERSION=${latest_dump1090}/" piaware/Dockerfile
-            sed -i "s/DUMP1090_VERSION=${current_dump1090}/DUMP1090_VERSION=${latest_dump1090}/" .github/workflows/build.yml
           fi
 
           if [ "$current_piaware" != "$latest_piaware" ]; then
@@ -153,7 +150,6 @@ jobs:
             title_parts="${title_parts}PiAware to ${latest_piaware}, "
             sed -i "s/PIAWARE_BUILDER_VERSION: \"${current_piaware}\"/PIAWARE_BUILDER_VERSION: \"${latest_piaware}\"/" piaware/build.yaml
             sed -i "s/ARG PIAWARE_BUILDER_VERSION=${current_piaware}/ARG PIAWARE_BUILDER_VERSION=${latest_piaware}/" piaware/Dockerfile
-            sed -i "s/PIAWARE_BUILDER_VERSION=${current_piaware}/PIAWARE_BUILDER_VERSION=${latest_piaware}/" .github/workflows/build.yml
           fi
 
           echo "has_updates=$has_updates" >> "$GITHUB_OUTPUT"
