@@ -107,10 +107,11 @@ jobs:
           echo "  dump1090: $current_dump1090"
           echo "  PiAware: $current_piaware"
 
-          # Fetch latest release tags
+          # Fetch latest versions
+          # Pi-hole publishes GitHub releases; FlightAware repos use tags only
           latest_pihole=$(gh api repos/pi-hole/docker-pi-hole/releases/latest --jq '.tag_name')
-          latest_dump1090=$(gh api repos/flightaware/dump1090/releases/latest --jq '.tag_name')
-          latest_piaware=$(gh api repos/flightaware/piaware_builder/releases/latest --jq '.tag_name')
+          latest_dump1090=$(gh api repos/flightaware/dump1090/tags --jq '.[0].name')
+          latest_piaware=$(gh api repos/flightaware/piaware_builder/tags --jq '.[0].name')
 
           echo "Latest versions:"
           echo "  Pi-hole: $latest_pihole"
