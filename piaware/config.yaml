@@ -1,5 +1,5 @@
 name: PiAware
-version: "1.1.0"
+version: "1.2.0"
 slug: piaware
 description: ADS-B receiver with PiAware, dump1090-fa, and SkyAware
 url: https://github.com/jordankurtz/ha-addons

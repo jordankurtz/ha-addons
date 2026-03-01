@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- Add `log_level` option (trace|debug|info|notice|warning, default: info)
+- GPS fix failure in gpsd mode is now a warning — PiAware starts without coordinates rather than exiting
+
 ## 1.1.0
 
 - Add `gps_source` option: set to `gpsd` to query the gpsd addon for coordinates at startup instead of entering them manually
