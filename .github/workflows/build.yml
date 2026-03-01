@@ -8,19 +8,25 @@ on:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      check_updates:
+        description: 'Check for dependency updates'
+        type: boolean
+        default: true
 
 jobs:
   changes:
     name: Detect changes
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.check_updates)
     runs-on: ubuntu-latest
     outputs:
-      pihole: ${{ steps.filter.outputs.pihole }}
-      piaware: ${{ steps.filter.outputs.piaware }}
-      unbound: ${{ steps.filter.outputs.unbound }}
+      pihole: ${{ steps.filter.outputs.pihole || steps.force.outputs.all }}
+      piaware: ${{ steps.filter.outputs.piaware || steps.force.outputs.all }}
+      unbound: ${{ steps.filter.outputs.unbound || steps.force.outputs.all }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
+        if: github.event_name != 'workflow_dispatch'
         id: filter
         with:
           filters: |
@@ -30,6 +36,10 @@ jobs:
               - 'piaware/**'
             unbound:
               - 'unbound/**'
+      - name: Force all builds on dispatch
+        if: github.event_name == 'workflow_dispatch'
+        id: force
+        run: echo "all=true" >> "$GITHUB_OUTPUT"
 
   build-pihole:
     name: Build Pi-hole
@@ -84,7 +94,7 @@ jobs:
 
   check-updates:
     name: Check dependency updates
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.check_updates)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -172,9 +182,16 @@ jobs:
           fi
 
       - uses: peter-evans/create-pull-request@v7
+        id: create-pr
         if: steps.updates.outputs.has_updates == 'true'
         with:
           branch: auto-update-dependencies
           title: ${{ steps.updates.outputs.pr_title }}
           body: ${{ steps.updates.outputs.pr_body }}
           commit-message: ${{ steps.updates.outputs.commit_message }}
+
+      - name: Trigger CI on PR branch
+        if: steps.create-pr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run build.yml --ref auto-update-dependencies -f check_updates=false
