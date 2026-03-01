@@ -7,6 +7,9 @@
 # ==============================================================================
 
 declare feeder_id
+declare gps_source
+declare gpsd_host
+declare gpsd_port
 declare latitude
 declare longitude
 declare altitude_ft
@@ -19,9 +22,49 @@ declare rtlsdr_device_serial
 
 # --- Read configuration ---
 feeder_id=$(bashio::config 'feeder_id' '')
-latitude=$(bashio::config 'latitude')
-longitude=$(bashio::config 'longitude')
+gps_source=$(bashio::config 'gps_source' 'manual')
 altitude_ft=$(bashio::config 'altitude_ft' '0')
+
+# --- Resolve coordinates ---
+if [ "${gps_source}" = "gpsd" ]; then
+    gpsd_host=$(bashio::config 'gpsd_host' '')
+    gpsd_port=$(bashio::config 'gpsd_port' '2947')
+    [ -z "${gpsd_host}" ] && gpsd_host="homeassistant.local"
+
+    bashio::log.info "GPS source: gpsd (${gpsd_host}:${gpsd_port})"
+
+    fix=""
+    for attempt in 1 2 3 4 5; do
+        bashio::log.info "Querying gpsd for fix (attempt ${attempt}/5)..."
+        raw=$(gpspipe -w -n 30 -t 30 -h "${gpsd_host}" -p "${gpsd_port}" 2>/dev/null || true)
+        fix=$(echo "${raw}" | jq -c 'select(.class=="TPV") | select(.mode>=2) | select(.lat!=null and .lon!=null)' | tail -1)
+        [ -n "${fix}" ] && break
+        [ "${attempt}" -lt 5 ] && bashio::log.info "No fix yet, retrying in 15s..." && sleep 15
+    done
+
+    if [ -z "${fix}" ]; then
+        bashio::log.fatal "Could not obtain a GPS fix from gpsd after 5 attempts. Is the gpsd addon running and does it have a fix?"
+        exit 1
+    fi
+
+    latitude=$(echo "${fix}" | jq -r '.lat')
+    longitude=$(echo "${fix}" | jq -r '.lon')
+
+    if [ -z "${latitude}" ] || [ "${latitude}" = "null" ] || [ -z "${longitude}" ] || [ "${longitude}" = "null" ]; then
+        bashio::log.fatal "gpsd returned a fix but lat/lon were null."
+        exit 1
+    fi
+
+    bashio::log.info "Coordinates from gpsd: lat=${latitude}, lon=${longitude}"
+else
+    latitude=$(bashio::config 'latitude' '')
+    longitude=$(bashio::config 'longitude' '')
+
+    if [ -z "${latitude}" ] || [ -z "${longitude}" ]; then
+        bashio::log.fatal "latitude and longitude are required when gps_source is 'manual'."
+        exit 1
+    fi
+fi
 receiver_type=$(bashio::config 'receiver_type')
 gain=$(bashio::config 'gain')
 allow_mlat=$(bashio::config 'allow_mlat')

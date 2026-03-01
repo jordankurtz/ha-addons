@@ -48,6 +48,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     procps \
     curl \
+    gpsd-clients \
     jq \
     && rm -rf /var/lib/apt/lists/*
 

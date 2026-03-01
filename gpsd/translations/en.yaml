@@ -1,0 +1,26 @@
+configuration:
+  gps_device:
+    name: GPS Device
+    description: >-
+      Path to the GPS serial device (e.g., /dev/ttyACM0). Leave empty to
+      auto-detect from /dev/ttyACM0, /dev/ttyUSB0, /dev/ttyAMA0, /dev/ttyS0.
+  update_ha_location:
+    name: Update HA Home Zone
+    description: >-
+      Periodically update the Home Assistant home zone with the current GPS
+      coordinates. Useful for mobile setups or for initial fixed-location setup.
+  location_update_interval:
+    name: Location Update Interval (seconds)
+    description: >-
+      How often (in seconds) to read the GPS and push an updated location to
+      Home Assistant. Range: 10–3600 seconds.
+  require_3d_fix:
+    name: Require 3D Fix
+    description: >-
+      Only accept a 3D GPS fix (latitude, longitude, and altitude) for HA
+      location updates. When disabled, a 2D fix (lat/lon only) is sufficient.
+  min_satellites:
+    name: Minimum Satellites
+    description: >-
+      Minimum number of satellites that must be visible for a fix to be
+      considered valid. Set to 0 to disable this check.

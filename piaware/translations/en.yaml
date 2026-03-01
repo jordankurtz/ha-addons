@@ -4,12 +4,32 @@ configuration:
     description: >-
       FlightAware feeder UUID. Leave empty to auto-generate on first run.
       Your feeder ID will be saved and reused across restarts.
+  gps_source:
+    name: GPS Source
+    description: >-
+      How to obtain receiver coordinates. Use "manual" to enter latitude and
+      longitude directly, or "gpsd" to query the gpsd addon at startup.
+  gpsd_host:
+    name: gpsd Host
+    description: >-
+      Hostname or IP of the gpsd addon. Leave empty to use
+      "homeassistant.local" (the default HA host address). Only used when
+      GPS Source is "gpsd".
+  gpsd_port:
+    name: gpsd Port
+    description: >-
+      TCP port for the gpsd service. Default is 2947. Only used when GPS
+      Source is "gpsd".
   latitude:
     name: Latitude
-    description: Receiver latitude in decimal degrees (e.g., 40.7128).
+    description: >-
+      Receiver latitude in decimal degrees (e.g., 40.7128). Required when
+      GPS Source is "manual". Ignored when GPS Source is "gpsd".
   longitude:
     name: Longitude
-    description: Receiver longitude in decimal degrees (e.g., -74.0060).
+    description: >-
+      Receiver longitude in decimal degrees (e.g., -74.0060). Required when
+      GPS Source is "manual". Ignored when GPS Source is "gpsd".
   altitude_ft:
     name: Altitude (feet)
     description: Antenna altitude in feet above mean sea level.
