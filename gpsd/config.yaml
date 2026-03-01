@@ -1,0 +1,30 @@
+name: gpsd
+version: "1.0.0"
+slug: gpsd
+description: GPS daemon — exposes a USB GPS device over TCP and updates the HA home zone location
+url: https://github.com/jordankurtz/ha-addons
+arch:
+  - amd64
+  - aarch64
+  - armv7
+startup: system
+init: false
+usb: true
+uart: true
+homeassistant_api: true
+ports:
+  2947/tcp: 2947
+ports_description:
+  2947/tcp: gpsd JSON protocol (for other addons and clients)
+options:
+  gps_device: ""
+  update_ha_location: true
+  location_update_interval: 60
+  require_3d_fix: false
+  min_satellites: 4
+schema:
+  gps_device: str?
+  update_ha_location: bool
+  location_update_interval: "int(10,3600)"
+  require_3d_fix: bool
+  min_satellites: "int(0,20)"

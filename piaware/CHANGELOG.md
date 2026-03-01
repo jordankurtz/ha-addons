@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- Add `gps_source` option: set to `gpsd` to query the gpsd addon for coordinates at startup instead of entering them manually
+- Add `gpsd_host` and `gpsd_port` options for gpsd connection (default: `homeassistant.local:2947`)
+- `latitude` and `longitude` are now optional fields; runtime validation enforces them when `gps_source=manual`
+- Install `gpsd-clients` (`gpspipe`) for querying the gpsd addon
+
 ## 1.0.0
 
 - Initial release
