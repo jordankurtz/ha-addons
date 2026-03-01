@@ -24,3 +24,8 @@ configuration:
     description: >-
       Minimum number of satellites that must be visible for a fix to be
       considered valid. Set to 0 to disable this check.
+  log_level:
+    name: Log Level
+    description: >-
+      Verbosity of addon logs. "info" is suitable for normal use. "debug"
+      logs raw GPS messages and API responses. "trace" is extremely verbose.

@@ -12,18 +12,25 @@ declare update_ha_location
 declare location_update_interval
 declare require_3d_fix
 declare min_satellites
+declare log_level
 
 # --- Read configuration ---
+log_level=$(bashio::config 'log_level' 'info')
+bashio::log.level "${log_level}"
+
 gps_device=$(bashio::config 'gps_device' '')
 update_ha_location=$(bashio::config 'update_ha_location')
 location_update_interval=$(bashio::config 'location_update_interval' '60')
 require_3d_fix=$(bashio::config 'require_3d_fix')
 min_satellites=$(bashio::config 'min_satellites' '4')
 
+bashio::log.debug "Configuration: gps_device='${gps_device}' update_ha_location='${update_ha_location}' interval='${location_update_interval}' require_3d_fix='${require_3d_fix}' min_satellites='${min_satellites}'"
+
 # --- Device detection ---
 if [ -z "${gps_device}" ]; then
     bashio::log.info "No GPS device configured, auto-detecting..."
     for candidate in /dev/ttyACM0 /dev/ttyUSB0 /dev/ttyAMA0 /dev/ttyS0; do
+        bashio::log.debug "Probing ${candidate}..."
         if [ -e "${candidate}" ]; then
             gps_device="${candidate}"
             bashio::log.info "Auto-detected GPS device: ${gps_device}"
@@ -61,6 +68,7 @@ trap cleanup SIGTERM SIGINT
 # -S 2947: listen on port 2947
 # -G: listen on all interfaces (required for cross-addon access)
 bashio::log.info "Starting gpsd on ${gps_device} (port 2947)..."
+bashio::log.debug "gpsd command: gpsd -n -N -S 2947 -G ${gps_device}"
 gpsd -n -N -S 2947 -G "${gps_device}" &
 GPSD_PID=$!
 
@@ -82,8 +90,11 @@ update_ha_location_loop() {
     bashio::log.info "Location update loop started (interval: ${location_update_interval}s, min_mode: ${min_mode}, min_satellites: ${min_satellites})"
 
     while true; do
+        bashio::log.debug "Polling gpsd for TPV message..."
+
         # Collect up to 30 JSON messages from gpsd, timeout 30s
         raw=$(gpspipe -w -n 30 -t 30 2>/dev/null || true)
+        bashio::log.trace "gpspipe raw output: ${raw}"
 
         # Find the last TPV message with a valid fix, sufficient mode, and coordinates
         fix=$(echo "${raw}" \
@@ -98,12 +109,15 @@ update_ha_location_loop() {
             lat=$(echo "${fix}" | jq -r '.lat')
             lon=$(echo "${fix}" | jq -r '.lon')
             alt=$(echo "${fix}" | jq -r '.alt // empty')
+            mode=$(echo "${fix}" | jq -r '.mode')
 
             bashio::log.info "GPS fix: lat=${lat}, lon=${lon}${alt:+, alt=${alt}m}"
+            bashio::log.debug "Fix details: mode=${mode}, raw=${fix}"
 
             payload="{\"latitude\": ${lat}, \"longitude\": ${lon}}"
             [ -n "${alt}" ] && payload="{\"latitude\": ${lat}, \"longitude\": ${lon}, \"elevation\": ${alt}}"
 
+            bashio::log.debug "Posting location to HA: ${payload}"
             response=$(curl -s -o /dev/null -w "%{http_code}" \
                 -X POST \
                 -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
@@ -112,7 +126,7 @@ update_ha_location_loop() {
                 "http://supervisor/core/api/services/homeassistant/set_location")
 
             if [ "${response}" = "200" ]; then
-                bashio::log.debug "HA home zone updated successfully"
+                bashio::log.debug "HA home zone updated successfully (HTTP ${response})"
             else
                 bashio::log.warning "Failed to update HA home zone (HTTP ${response})"
             fi

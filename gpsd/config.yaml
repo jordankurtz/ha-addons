@@ -22,9 +22,11 @@ options:
   location_update_interval: 60
   require_3d_fix: false
   min_satellites: 4
+  log_level: info
 schema:
   gps_device: str?
   update_ha_location: bool
   location_update_interval: "int(10,3600)"
   require_3d_fix: bool
   min_satellites: "int(0,20)"
+  log_level: list(trace|debug|info|notice|warning)

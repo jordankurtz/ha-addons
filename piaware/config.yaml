@@ -43,6 +43,7 @@ options:
   allow_modeac: true
   rtlsdr_ppm: 0
   rtlsdr_device_serial: ""
+  log_level: info
 schema:
   feeder_id: str?
   gps_source: list(manual|gpsd)
@@ -57,3 +58,4 @@ schema:
   allow_modeac: bool
   rtlsdr_ppm: int?
   rtlsdr_device_serial: str?
+  log_level: list(trace|debug|info|notice|warning)
