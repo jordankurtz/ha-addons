@@ -19,11 +19,17 @@ declare allow_mlat
 declare allow_modeac
 declare rtlsdr_ppm
 declare rtlsdr_device_serial
+declare log_level
 
 # --- Read configuration ---
+log_level=$(bashio::config 'log_level' 'info')
+bashio::log.level "${log_level}"
+
 feeder_id=$(bashio::config 'feeder_id' '')
 gps_source=$(bashio::config 'gps_source' 'manual')
 altitude_ft=$(bashio::config 'altitude_ft' '0')
+
+bashio::log.debug "Configuration: gps_source='${gps_source}' altitude_ft='${altitude_ft}'"
 
 # --- Resolve coordinates ---
 if [ "${gps_source}" = "gpsd" ]; then
@@ -37,25 +43,29 @@ if [ "${gps_source}" = "gpsd" ]; then
     for attempt in 1 2 3 4 5; do
         bashio::log.info "Querying gpsd for fix (attempt ${attempt}/5)..."
         raw=$(gpspipe -w -n 30 -t 30 -h "${gpsd_host}" -p "${gpsd_port}" 2>/dev/null || true)
+        bashio::log.trace "gpspipe raw output: ${raw}"
         fix=$(echo "${raw}" | jq -c 'select(.class=="TPV") | select(.mode>=2) | select(.lat!=null and .lon!=null)' | tail -1)
+        bashio::log.debug "Parsed fix: ${fix:-<none>}"
         [ -n "${fix}" ] && break
         [ "${attempt}" -lt 5 ] && bashio::log.info "No fix yet, retrying in 15s..." && sleep 15
     done
 
     if [ -z "${fix}" ]; then
-        bashio::log.fatal "Could not obtain a GPS fix from gpsd after 5 attempts. Is the gpsd addon running and does it have a fix?"
-        exit 1
+        bashio::log.warning "Could not obtain a GPS fix from gpsd after 5 attempts. Starting without coordinates — range rings and map centering will be unavailable."
+        latitude=""
+        longitude=""
+    else
+        latitude=$(echo "${fix}" | jq -r '.lat')
+        longitude=$(echo "${fix}" | jq -r '.lon')
+
+        if [ -z "${latitude}" ] || [ "${latitude}" = "null" ] || [ -z "${longitude}" ] || [ "${longitude}" = "null" ]; then
+            bashio::log.warning "gpsd returned a fix but lat/lon were null. Starting without coordinates."
+            latitude=""
+            longitude=""
+        else
+            bashio::log.info "Coordinates from gpsd: lat=${latitude}, lon=${longitude}"
+        fi
     fi
-
-    latitude=$(echo "${fix}" | jq -r '.lat')
-    longitude=$(echo "${fix}" | jq -r '.lon')
-
-    if [ -z "${latitude}" ] || [ "${latitude}" = "null" ] || [ -z "${longitude}" ] || [ "${longitude}" = "null" ]; then
-        bashio::log.fatal "gpsd returned a fix but lat/lon were null."
-        exit 1
-    fi
-
-    bashio::log.info "Coordinates from gpsd: lat=${latitude}, lon=${longitude}"
 else
     latitude=$(bashio::config 'latitude' '')
     longitude=$(bashio::config 'longitude' '')
@@ -65,6 +75,7 @@ else
         exit 1
     fi
 fi
+
 receiver_type=$(bashio::config 'receiver_type')
 gain=$(bashio::config 'gain')
 allow_mlat=$(bashio::config 'allow_mlat')
@@ -117,14 +128,19 @@ DUMP1090_ARGS=(
     --net-bi-port 30004,30104
     --net-bo-port 30005
     --net-ro-port 30002
-    --lat "${latitude}"
-    --lon "${longitude}"
     --fix
     --json-location-accuracy 1
     --write-json /run/dump1090-fa
     --write-json-every 1
     --quiet
 )
+
+# Coordinates are optional — omitting them disables range rings and map centering
+if [ -n "${latitude}" ] && [ -n "${longitude}" ]; then
+    DUMP1090_ARGS+=(--lat "${latitude}" --lon "${longitude}")
+else
+    bashio::log.warning "No coordinates available — dump1090 range rings and initial map position will be unavailable."
+fi
 
 # Gain setting
 if [ "${gain}" = "max" ]; then
@@ -153,6 +169,8 @@ fi
 # MLAT Beast output port
 DUMP1090_ARGS+=(--net-bo-port 30105)
 
+bashio::log.debug "dump1090-fa args: ${DUMP1090_ARGS[*]}"
+
 # --- Graceful shutdown handler ---
 cleanup() {
     bashio::log.info "Shutting down..."
@@ -166,9 +184,9 @@ trap cleanup SIGTERM SIGINT
 
 # --- Start dump1090-fa ---
 bashio::log.info "Starting dump1090-fa..."
-bashio::log.info "  Latitude: ${latitude}"
-bashio::log.info "  Longitude: ${longitude}"
-bashio::log.info "  Gain: ${gain}"
+bashio::log.info "  Latitude:  ${latitude:-<not set>}"
+bashio::log.info "  Longitude: ${longitude:-<not set>}"
+bashio::log.info "  Gain:          ${gain}"
 bashio::log.info "  Receiver type: ${receiver_type}"
 
 dump1090-fa "${DUMP1090_ARGS[@]}" &

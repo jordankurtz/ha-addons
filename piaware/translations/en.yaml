@@ -62,3 +62,8 @@ configuration:
     description: >-
       Specific RTL-SDR device serial number. Only needed if you have
       multiple RTL-SDR dongles connected.
+  log_level:
+    name: Log Level
+    description: >-
+      Verbosity of addon logs. "info" is suitable for normal use. "debug"
+      logs GPS query details and dump1090 arguments. "trace" is extremely verbose.
