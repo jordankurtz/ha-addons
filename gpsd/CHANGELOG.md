@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+
+- Add `log_level` option (trace|debug|info|notice|warning, default: info)
+
 ## 1.0.0
 
 - Initial release
