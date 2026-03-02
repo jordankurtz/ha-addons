@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+- Add `gps_coordinate_updates` option: when enabled, PiAware polls gpsd periodically and restarts dump1090-fa when position changes by more than ~100m
+- Add `gps_coordinate_update_interval` option (30–3600s, default: 60s)
+- Refactor dump1090-fa startup into a function to support clean planned restarts
+
 ## 1.2.0
 
 - Add `log_level` option (trace|debug|info|notice|warning, default: info)

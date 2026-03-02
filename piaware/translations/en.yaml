@@ -20,6 +20,17 @@ configuration:
     description: >-
       TCP port for the gpsd service. Default is 2947. Only used when GPS
       Source is "gpsd".
+  gps_coordinate_updates:
+    name: Live Coordinate Updates
+    description: >-
+      When enabled, PiAware polls gpsd periodically and restarts dump1090-fa
+      if the position has changed by more than ~100m. Useful for mobile setups
+      (vehicles, boats). Only applies when GPS Source is "gpsd".
+  gps_coordinate_update_interval:
+    name: Coordinate Update Interval (seconds)
+    description: >-
+      How often (in seconds) to check gpsd for a position change.
+      Range: 30–3600 seconds.
   latitude:
     name: Latitude
     description: >-

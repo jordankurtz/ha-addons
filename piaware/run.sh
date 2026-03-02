@@ -20,6 +20,12 @@ declare allow_modeac
 declare rtlsdr_ppm
 declare rtlsdr_device_serial
 declare log_level
+declare gps_coordinate_updates
+declare gps_coordinate_update_interval
+
+# Temp files for coordinating planned dump1090 restarts
+COORD_UPDATE_FILE="/tmp/piaware_coord_update"
+DUMP1090_PID_FILE="/tmp/dump1090.pid"
 
 # --- Read configuration ---
 log_level=$(bashio::config 'log_level' 'info')
@@ -28,8 +34,10 @@ bashio::log.level "${log_level}"
 feeder_id=$(bashio::config 'feeder_id' '')
 gps_source=$(bashio::config 'gps_source' 'manual')
 altitude_ft=$(bashio::config 'altitude_ft' '0')
+gps_coordinate_updates=$(bashio::config 'gps_coordinate_updates' 'false')
+gps_coordinate_update_interval=$(bashio::config 'gps_coordinate_update_interval' '60')
 
-bashio::log.debug "Configuration: gps_source='${gps_source}' altitude_ft='${altitude_ft}'"
+bashio::log.debug "Configuration: gps_source='${gps_source}' altitude_ft='${altitude_ft}' gps_coordinate_updates='${gps_coordinate_updates}'"
 
 # --- Resolve coordinates ---
 if [ "${gps_source}" = "gpsd" ]; then
@@ -120,14 +128,15 @@ else
     piaware-config allow-modeac no
 fi
 
-# --- Build dump1090-fa command-line arguments ---
-DUMP1090_ARGS=(
+# --- Build static dump1090-fa arguments (everything except lat/lon) ---
+DUMP1090_STATIC_ARGS=(
     --device-type rtlsdr
     --net
     --net-sbs-port 30003
     --net-bi-port 30004,30104
     --net-bo-port 30005
     --net-ro-port 30002
+    --net-bo-port 30105
     --fix
     --json-location-accuracy 1
     --write-json /run/dump1090-fa
@@ -135,48 +144,108 @@ DUMP1090_ARGS=(
     --quiet
 )
 
-# Coordinates are optional — omitting them disables range rings and map centering
-if [ -n "${latitude}" ] && [ -n "${longitude}" ]; then
-    DUMP1090_ARGS+=(--lat "${latitude}" --lon "${longitude}")
-else
-    bashio::log.warning "No coordinates available — dump1090 range rings and initial map position will be unavailable."
-fi
-
 # Gain setting
 if [ "${gain}" = "max" ]; then
-    DUMP1090_ARGS+=(--gain -10)
+    DUMP1090_STATIC_ARGS+=(--gain -10)
 elif [ "${gain}" = "auto" ]; then
-    DUMP1090_ARGS+=(--gain -1)
+    DUMP1090_STATIC_ARGS+=(--gain -1)
 else
-    DUMP1090_ARGS+=(--gain "${gain}")
+    DUMP1090_STATIC_ARGS+=(--gain "${gain}")
 fi
 
 # PPM correction
 if [ "${rtlsdr_ppm}" != "0" ]; then
-    DUMP1090_ARGS+=(--ppm "${rtlsdr_ppm}")
+    DUMP1090_STATIC_ARGS+=(--ppm "${rtlsdr_ppm}")
 fi
 
 # Specific device serial
 if [ -n "${rtlsdr_device_serial}" ]; then
-    DUMP1090_ARGS+=(--device "${rtlsdr_device_serial}")
+    DUMP1090_STATIC_ARGS+=(--device "${rtlsdr_device_serial}")
 fi
 
 # Mode A/C
 if bashio::var.true "${allow_modeac}"; then
-    DUMP1090_ARGS+=(--modeac)
+    DUMP1090_STATIC_ARGS+=(--modeac)
 fi
 
-# MLAT Beast output port
-DUMP1090_ARGS+=(--net-bo-port 30105)
+# --- start_dump1090 <lat> <lon> ---
+# Starts dump1090-fa, writes its PID to DUMP1090_PID_FILE, and prints the PID.
+start_dump1090() {
+    local lat="$1"
+    local lon="$2"
+    local args=("${DUMP1090_STATIC_ARGS[@]}")
 
-bashio::log.debug "dump1090-fa args: ${DUMP1090_ARGS[*]}"
+    if [ -n "${lat}" ] && [ -n "${lon}" ]; then
+        args+=(--lat "${lat}" --lon "${lon}")
+    else
+        bashio::log.warning "No coordinates available — range rings and map centering will be unavailable."
+    fi
+
+    bashio::log.debug "dump1090-fa args: ${args[*]}"
+    dump1090-fa "${args[@]}" &
+    local pid=$!
+    echo "${pid}" > "${DUMP1090_PID_FILE}"
+    echo "${pid}"
+}
+
+# --- GPS coordinate monitor loop ---
+# Polls gpsd on the configured interval. When the position changes by more
+# than ~100m (0.001 degrees), writes the new coords to COORD_UPDATE_FILE and
+# kills the current dump1090-fa so the main loop can restart it.
+gps_monitor_loop() {
+    local current_lat="${latitude}"
+    local current_lon="${longitude}"
+
+    bashio::log.info "GPS coordinate monitor started (interval: ${gps_coordinate_update_interval}s)"
+
+    while true; do
+        sleep "${gps_coordinate_update_interval}"
+
+        raw=$(gpspipe -w -n 30 -t 30 -h "${gpsd_host}" -p "${gpsd_port}" 2>/dev/null || true)
+        bashio::log.trace "GPS monitor gpspipe output: ${raw}"
+        fix=$(echo "${raw}" | jq -c 'select(.class=="TPV") | select(.mode>=2) | select(.lat!=null and .lon!=null)' | tail -1)
+
+        if [ -z "${fix}" ]; then
+            bashio::log.debug "GPS monitor: no fix available"
+            continue
+        fi
+
+        new_lat=$(echo "${fix}" | jq -r '.lat')
+        new_lon=$(echo "${fix}" | jq -r '.lon')
+
+        # Check if position changed beyond ~100m threshold (0.001 degrees)
+        changed=$(awk -v nlat="${new_lat}" -v clat="${current_lat:-0}" \
+                       -v nlon="${new_lon}" -v clon="${current_lon:-0}" \
+                  'BEGIN {
+                       dlat = nlat - clat; if (dlat < 0) dlat = -dlat
+                       dlon = nlon - clon; if (dlon < 0) dlon = -dlon
+                       print (dlat > 0.001 || dlon > 0.001) ? "yes" : "no"
+                   }')
+
+        if [ "${changed}" = "yes" ]; then
+            bashio::log.info "Location changed: (${current_lat},${current_lon}) -> (${new_lat},${new_lon}) — restarting dump1090-fa"
+            current_lat="${new_lat}"
+            current_lon="${new_lon}"
+
+            echo "${new_lat} ${new_lon}" > "${COORD_UPDATE_FILE}"
+            dump1090_pid=$(cat "${DUMP1090_PID_FILE}" 2>/dev/null)
+            [ -n "${dump1090_pid}" ] && kill "${dump1090_pid}" 2>/dev/null
+        else
+            bashio::log.debug "GPS monitor: position unchanged (lat=${new_lat}, lon=${new_lon})"
+        fi
+    done
+}
 
 # --- Graceful shutdown handler ---
+GPS_MONITOR_PID=""
+
 cleanup() {
     bashio::log.info "Shutting down..."
+    [ -n "${GPS_MONITOR_PID}" ] && kill "${GPS_MONITOR_PID}" 2>/dev/null
     kill "${DUMP1090_PID}" 2>/dev/null
     kill "${LIGHTTPD_PID}" 2>/dev/null
     kill "${PIAWARE_PID}" 2>/dev/null
+    rm -f "${COORD_UPDATE_FILE}" "${DUMP1090_PID_FILE}"
     wait
     exit 0
 }
@@ -184,15 +253,13 @@ trap cleanup SIGTERM SIGINT
 
 # --- Start dump1090-fa ---
 bashio::log.info "Starting dump1090-fa..."
-bashio::log.info "  Latitude:  ${latitude:-<not set>}"
-bashio::log.info "  Longitude: ${longitude:-<not set>}"
+bashio::log.info "  Latitude:      ${latitude:-<not set>}"
+bashio::log.info "  Longitude:     ${longitude:-<not set>}"
 bashio::log.info "  Gain:          ${gain}"
 bashio::log.info "  Receiver type: ${receiver_type}"
 
-dump1090-fa "${DUMP1090_ARGS[@]}" &
-DUMP1090_PID=$!
+DUMP1090_PID=$(start_dump1090 "${latitude}" "${longitude}")
 
-# Wait for dump1090 to start
 sleep 3
 
 if ! kill -0 "${DUMP1090_PID}" 2>/dev/null; then
@@ -215,7 +282,6 @@ PIAWARE_PID=$!
 (
     sleep 15
     if [ ! -f /data/piaware/feeder-id ]; then
-        # Try to capture from PiAware's config
         captured_id=""
         if [ -f /var/cache/piaware/feeder_id ]; then
             captured_id=$(cat /var/cache/piaware/feeder_id)
@@ -229,11 +295,40 @@ PIAWARE_PID=$!
     fi
 ) &
 
-# --- Wait for any process to exit ---
+# --- Start GPS coordinate monitor (only when using gpsd with updates enabled) ---
+if [ "${gps_source}" = "gpsd" ] && bashio::var.true "${gps_coordinate_updates}"; then
+    gps_monitor_loop &
+    GPS_MONITOR_PID=$!
+fi
+
+# --- Monitor processes ---
+# dump1090-fa may be intentionally restarted for coordinate updates; lighttpd
+# and piaware exiting is always fatal.
 bashio::log.info "All processes started, monitoring..."
 
-wait -n "${DUMP1090_PID}" "${LIGHTTPD_PID}" "${PIAWARE_PID}"
+while true; do
+    wait -n "${DUMP1090_PID}" "${LIGHTTPD_PID}" "${PIAWARE_PID}"
 
-# If any process exits, shut everything down
-bashio::log.warning "A process exited unexpectedly, shutting down..."
-cleanup
+    if ! kill -0 "${LIGHTTPD_PID}" 2>/dev/null || ! kill -0 "${PIAWARE_PID}" 2>/dev/null; then
+        bashio::log.warning "A critical process exited unexpectedly, shutting down..."
+        cleanup
+    fi
+
+    if ! kill -0 "${DUMP1090_PID}" 2>/dev/null; then
+        if [ -f "${COORD_UPDATE_FILE}" ]; then
+            read -r latitude longitude < "${COORD_UPDATE_FILE}"
+            rm -f "${COORD_UPDATE_FILE}"
+            bashio::log.info "Restarting dump1090-fa with updated coordinates: lat=${latitude}, lon=${longitude}"
+            DUMP1090_PID=$(start_dump1090 "${latitude}" "${longitude}")
+            sleep 3
+            if ! kill -0 "${DUMP1090_PID}" 2>/dev/null; then
+                bashio::log.error "dump1090-fa failed to restart after coordinate update!"
+                cleanup
+            fi
+            bashio::log.info "dump1090-fa restarted (PID: ${DUMP1090_PID})"
+        else
+            bashio::log.warning "dump1090-fa exited unexpectedly, shutting down..."
+            cleanup
+        fi
+    fi
+done
