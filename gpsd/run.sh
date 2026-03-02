@@ -84,12 +84,28 @@ if ! kill -0 "${GPSD_PID}" 2>/dev/null; then
 fi
 bashio::log.info "gpsd started (PID: ${GPSD_PID})"
 
+# Wait for gpsd to accept connections (up to 8 s).
+# gpsd 3.27.x initialises its device before binding the TCP socket, so the
+# 1-second sleep above is not always sufficient.
+if ! python3 -c "
+import socket, sys, time
+for _ in range(8):
+    try:
+        socket.create_connection(('127.0.0.1', 2947), timeout=1).close()
+        sys.exit(0)
+    except OSError:
+        time.sleep(1)
+sys.exit(1)
+" 2>/dev/null; then
+    bashio::log.warning "gpsd is not accepting connections on port 2947 — serial link verification may fail"
+fi
+
 # Verify the serial link is alive by checking the gpsd DEVICES response.
 # gpsd emits a DEVICES message within the first few JSON frames — it lists every
 # device it has successfully opened and the driver it detected. An empty device
 # list or a missing 'activated' timestamp means the module isn't responding.
 bashio::log.info "Verifying serial link to ${gps_device}..."
-probe_output=$(gpspipe -w -n 5 -t 10 2>/dev/null || true)
+probe_output=$(timeout 15 gpspipe -w -n 5 -t 10 2>/dev/null || true)
 bashio::log.trace "gpspipe probe output: ${probe_output}"
 
 device_info=$(echo "${probe_output}" \
@@ -121,7 +137,7 @@ update_ha_location_loop() {
         bashio::log.debug "Polling gpsd for TPV message..."
 
         # Collect up to 30 JSON messages from gpsd, timeout 30s
-        raw=$(gpspipe -w -n 30 -t 30 2>/dev/null || true)
+        raw=$(timeout 35 gpspipe -w -n 30 -t 30 2>/dev/null || true)
         bashio::log.trace "gpspipe raw output: ${raw}"
 
         # Find the last TPV message with a valid fix, sufficient mode, and coordinates
