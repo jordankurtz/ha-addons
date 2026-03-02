@@ -218,7 +218,7 @@
 
   async function refresh() {
     try {
-      const r = await fetch('/api/status');
+      const r = await fetch('api/status');
       const d = await r.json();
       lastUpdate = new Date();
 
@@ -284,7 +284,7 @@
   async function refreshMessages() {
     if (!logVisible) return;
     try {
-      const r = await fetch('/api/messages');
+      const r = await fetch('api/messages');
       const msgs = await r.json();
       const box = document.getElementById('log-box');
       const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
