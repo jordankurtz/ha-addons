@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- Auto-detection now uses glob patterns to discover all connected devices (any index), not just index 0
+- Replaced `/dev/ttyS0` (RS-232 legacy port) with `/dev/gps0` (gpsd udev symlink) in probe list
+- All candidate devices logged as "found" or "not present" at startup
+
 ## 1.1.0
 
 - Add `log_level` option (trace|debug|info|notice|warning, default: info)
