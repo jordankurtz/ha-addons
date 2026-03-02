@@ -2,12 +2,29 @@ ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
 
 FROM ${BUILD_FROM}
 
+ARG GPSD_VERSION=release-3.27.5
+
+# Build gpsd from source
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gpsd \
-    gpsd-clients \
-    curl \
-    jq \
-    python3 \
+        build-essential \
+        git \
+        scons \
+        pkg-config \
+    && git clone --depth 1 --branch "${GPSD_VERSION}" \
+        https://gitlab.com/gpsd/gpsd.git /tmp/gpsd \
+    && cd /tmp/gpsd \
+    && scons prefix=/usr python=no \
+    && scons prefix=/usr python=no install \
+    && rm -rf /tmp/gpsd \
+    && apt-get purge -y build-essential git scons pkg-config \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+        jq \
+        python3 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /usr/share/gpsd-ui

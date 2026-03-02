@@ -94,6 +94,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            GPSD_VERSION=release-3.27.5
 
   build-unbound:
     name: Build Unbound
@@ -130,24 +131,30 @@ jobs:
           current_pihole=$(grep 'PIHOLE_VERSION:' pihole/build.yaml | sed 's/.*"\(.*\)".*/\1/')
           current_dump1090=$(grep 'DUMP1090_VERSION:' piaware/build.yaml | sed 's/.*"\(.*\)".*/\1/')
           current_piaware=$(grep 'PIAWARE_BUILDER_VERSION:' piaware/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+          current_gpsd=$(grep 'GPSD_VERSION:' gpsd/build.yaml | sed 's/.*"\(.*\)".*/\1/')
 
           echo "Current versions:"
           echo "  Pi-hole: $current_pihole"
           echo "  dump1090: $current_dump1090"
           echo "  PiAware: $current_piaware"
+          echo "  gpsd: $current_gpsd"
 
           # Fetch latest versions
           # Pi-hole publishes GitHub releases; FlightAware repos use tags only
+          # gpsd is hosted on GitLab — fetch tags matching release-* via the GitLab API
           latest_pihole=$(gh api repos/pi-hole/docker-pi-hole/releases/latest --jq '.tag_name')
           latest_dump1090=$(gh api repos/flightaware/dump1090/tags --jq '.[0].name')
           latest_piaware=$(gh api repos/flightaware/piaware_builder/tags --jq '.[0].name')
+          latest_gpsd=$(curl -sf "https://gitlab.com/api/v4/projects/gpsd%2Fgpsd/repository/tags?order_by=version&sort=desc&search=release-&per_page=1" \
+            | jq -r '.[0].name')
 
           echo "Latest versions:"
           echo "  Pi-hole: $latest_pihole"
           echo "  dump1090: $latest_dump1090"
           echo "  PiAware: $latest_piaware"
+          echo "  gpsd: $latest_gpsd"
 
-          if [ -z "$latest_pihole" ] || [ -z "$latest_dump1090" ] || [ -z "$latest_piaware" ]; then
+          if [ -z "$latest_pihole" ] || [ -z "$latest_dump1090" ] || [ -z "$latest_piaware" ] || [ -z "$latest_gpsd" ] || [ "$latest_gpsd" = "null" ]; then
             echo "::error::Failed to fetch one or more latest versions"
             exit 1
           fi
@@ -179,6 +186,14 @@ jobs:
             title_parts="${title_parts}PiAware to ${latest_piaware}, "
             sed -i "s/PIAWARE_BUILDER_VERSION: \"${current_piaware}\"/PIAWARE_BUILDER_VERSION: \"${latest_piaware}\"/" piaware/build.yaml
             sed -i "s/ARG PIAWARE_BUILDER_VERSION=${current_piaware}/ARG PIAWARE_BUILDER_VERSION=${latest_piaware}/" piaware/Dockerfile
+          fi
+
+          if [ "$current_gpsd" != "$latest_gpsd" ]; then
+            has_updates=true
+            updates="${updates}- **gpsd**: \`${current_gpsd}\` → \`${latest_gpsd}\`\n"
+            title_parts="${title_parts}gpsd to ${latest_gpsd}, "
+            sed -i "s/GPSD_VERSION: \"${current_gpsd}\"/GPSD_VERSION: \"${latest_gpsd}\"/" gpsd/build.yaml
+            sed -i "s/GPSD_VERSION=${current_gpsd}/GPSD_VERSION=${latest_gpsd}/" .github/workflows/build.yml
           fi
 
           echo "has_updates=$has_updates" >> "$GITHUB_OUTPUT"

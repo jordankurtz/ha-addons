@@ -29,7 +29,7 @@ bashio::log.debug "Configuration: gps_device='${gps_device}' update_ha_location=
 # --- Device detection ---
 if [ -z "${gps_device}" ]; then
     bashio::log.info "No GPS device configured, auto-detecting..."
-    for candidate in /dev/gps* /dev/ttyACM* /dev/ttyUSB* /dev/ttyAMA*; do
+    for candidate in /dev/ttyACM* /dev/ttyUSB* /dev/ttyAMA*; do
         if [ -e "${candidate}" ]; then
             bashio::log.info "  ${candidate}: found"
             [ -z "${gps_device}" ] && gps_device="${candidate}"
@@ -39,7 +39,7 @@ if [ -z "${gps_device}" ]; then
     done
     [ -n "${gps_device}" ] && bashio::log.info "Using first detected device: ${gps_device}"
     if [ -z "${gps_device}" ]; then
-        bashio::log.fatal "No GPS device found. Connect a USB GPS and configure gps_device or ensure it appears at /dev/gps0, /dev/ttyACM0, /dev/ttyUSB0, or /dev/ttyAMA0."
+        bashio::log.fatal "No GPS device found. Connect a USB GPS and configure gps_device or ensure it appears at /dev/ttyACM0, /dev/ttyUSB0, or /dev/ttyAMA0."
         exit 1
     fi
 else
@@ -75,14 +75,39 @@ bashio::log.debug "gpsd command: gpsd -n -N -S 2947 -G ${gps_device}"
 gpsd -n -N -S 2947 -G "${gps_device}" &
 GPSD_PID=$!
 
-# Give gpsd a moment to bind its socket before clients connect
-sleep 2
+# Give gpsd a moment to bind its socket
+sleep 1
 
 if ! kill -0 "${GPSD_PID}" 2>/dev/null; then
     bashio::log.fatal "gpsd failed to start!"
     exit 1
 fi
 bashio::log.info "gpsd started (PID: ${GPSD_PID})"
+
+# Verify the serial link is alive by checking the gpsd DEVICES response.
+# gpsd emits a DEVICES message within the first few JSON frames — it lists every
+# device it has successfully opened and the driver it detected. An empty device
+# list or a missing 'activated' timestamp means the module isn't responding.
+bashio::log.info "Verifying serial link to ${gps_device}..."
+probe_output=$(gpspipe -w -n 5 -t 10 2>/dev/null || true)
+bashio::log.trace "gpspipe probe output: ${probe_output}"
+
+device_info=$(echo "${probe_output}" \
+    | jq -c --arg path "${gps_device}" \
+        'select(.class=="DEVICES") | .devices[] | select(.path==$path)' \
+    | head -1)
+
+if [ -n "${device_info}" ]; then
+    activated=$(echo "${device_info}" | jq -r '.activated // empty')
+    driver=$(echo "${device_info}" | jq -r '.driver // "unknown"')
+    if [ -n "${activated}" ]; then
+        bashio::log.info "Serial link OK — driver: ${driver}, device: ${gps_device}"
+    else
+        bashio::log.warning "Device ${gps_device} found by gpsd but not yet activated (driver: ${driver}). Data may not be flowing yet."
+    fi
+else
+    bashio::log.warning "gpsd did not report ${gps_device} as an active device. The module may not be responding — check the cable and that the device is a GPS receiver."
+fi
 
 # --- HA location update loop ---
 update_ha_location_loop() {
