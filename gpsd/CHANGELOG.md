@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1
+
+- Fix startup hang caused by gpsd 3.27.x binding its TCP socket after device initialisation; now polls for socket readiness (up to 8 s) before probing and logs a clear warning if the port never comes up
+- Cap `gpspipe` calls with hard `timeout` guards so a connection failure never stalls the startup probe or location-update loop for 2+ minutes
+
 ## 1.5.0
 
 - Build gpsd 3.27.5 from source (GitLab upstream) instead of installing the Debian Bookworm package (3.24); includes CVE fixes and protocol improvements from 3.25–3.27.5
