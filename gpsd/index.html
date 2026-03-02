@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>gpsd</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #111318;
+      color: #e4e6eb;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #9aa3b2;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .25rem .7rem;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .badge.no-fix  { background: #3a1f1f; color: #f87171; }
+    .badge.fix-2d  { background: #3a2e1a; color: #fbbf24; }
+    .badge.fix-3d  { background: #1a3028; color: #34d399; }
+    .badge.loading { background: #1e2230; color: #6b7280; }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .badge.fix-3d .dot { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .4; }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: .75rem;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: .75rem;
+      padding: 1rem 1.1rem;
+    }
+
+    .card-label {
+      font-size: .72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #6b7280;
+      margin-bottom: .35rem;
+    }
+
+    .card-value {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #e4e6eb;
+      line-height: 1.2;
+    }
+
+    .card-unit {
+      font-size: .8rem;
+      font-weight: 400;
+      color: #9aa3b2;
+      margin-left: .2rem;
+    }
+
+    .card-sub {
+      font-size: .75rem;
+      color: #6b7280;
+      margin-top: .2rem;
+    }
+
+    .no-data { color: #4b5563; }
+
+    .section-title {
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #4b5563;
+      margin: 1.25rem 0 .6rem;
+    }
+
+    .footer {
+      margin-top: 1.5rem;
+      font-size: .72rem;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .footer-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #374151;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 1.5rem 0 .5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .log-toggle {
+      font-size: .72rem;
+      color: #4b5563;
+    }
+    .log-box {
+      background: #0d0f14;
+      border: 1px solid #1e2230;
+      border-radius: .75rem;
+      padding: .75rem 1rem;
+      height: 220px;
+      overflow-y: auto;
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: .72rem;
+      line-height: 1.6;
+    }
+    .log-box.hidden { display: none; }
+    .log-row { display: flex; gap: .75rem; border-bottom: 1px solid #111318; padding: .2rem 0; }
+    .log-row:last-child { border-bottom: none; }
+    .log-class {
+      flex-shrink: 0;
+      width: 4rem;
+      font-weight: 600;
+    }
+    .log-class.TPV  { color: #34d399; }
+    .log-class.SKY  { color: #60a5fa; }
+    .log-class.ATT  { color: #a78bfa; }
+    .log-class.GST  { color: #fbbf24; }
+    .log-class.other { color: #6b7280; }
+    .log-fields { color: #9aa3b2; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+<h1>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+    <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+  </svg>
+  GPS Status
+  <span id="badge" class="badge loading"><span class="dot"></span>Loading</span>
+</h1>
+
+<div class="grid" id="grid">
+  <div class="card"><div class="card-label">Latitude</div><div class="card-value no-data" id="lat">—</div></div>
+  <div class="card"><div class="card-label">Longitude</div><div class="card-value no-data" id="lon">—</div></div>
+  <div class="card"><div class="card-label">Altitude</div><div class="card-value no-data" id="alt">—</div></div>
+  <div class="card"><div class="card-label">Satellites</div><div class="card-value no-data" id="sats">—</div><div class="card-sub" id="sats-sub"></div></div>
+</div>
+
+<div class="section-title">Accuracy</div>
+<div class="grid">
+  <div class="card"><div class="card-label">HDOP</div><div class="card-value no-data" id="hdop">—</div><div class="card-sub" id="hdop-sub"></div></div>
+  <div class="card"><div class="card-label">PDOP</div><div class="card-value no-data" id="pdop">—</div></div>
+  <div class="card"><div class="card-label">H. Error (±)</div><div class="card-value no-data" id="herr">—</div></div>
+  <div class="card"><div class="card-label">V. Error (±)</div><div class="card-value no-data" id="verr">—</div></div>
+</div>
+
+<div class="section-title">Motion</div>
+<div class="grid">
+  <div class="card"><div class="card-label">Speed</div><div class="card-value no-data" id="speed">—</div></div>
+  <div class="card"><div class="card-label">Heading</div><div class="card-value no-data" id="track">—</div></div>
+  <div class="card"><div class="card-label">Climb Rate</div><div class="card-value no-data" id="climb">—</div></div>
+</div>
+
+<div class="log-header" onclick="toggleLog()">
+  <div class="section-title" style="margin:0">Raw Messages</div>
+  <span class="log-toggle" id="log-toggle">▼ hide</span>
+</div>
+<div class="log-box" id="log-box"></div>
+
+<div class="footer"><div class="footer-dot"></div><span id="footer-text">Connecting to gpsd…</span></div>
+
+<script>
+  const fmt = (v, dec, unit) =>
+    v == null ? null : `<span class="card-value">${(+v).toFixed(dec)}<span class="card-unit">${unit}</span></span>`;
+
+  const set = (id, html) => {
+    const el = document.getElementById(id);
+    if (html == null) { el.innerHTML = '—'; el.classList.add('no-data'); }
+    else              { el.innerHTML = html; el.classList.remove('no-data'); }
+  };
+
+  const hdopLabel = v => v == null ? '' : v < 1 ? 'Ideal' : v < 2 ? 'Excellent' : v < 5 ? 'Good' : v < 10 ? 'Moderate' : 'Poor';
+
+  let lastUpdate = null;
+
+  async function refresh() {
+    try {
+      const r = await fetch('/api/status');
+      const d = await r.json();
+      lastUpdate = new Date();
+
+      const badge = document.getElementById('badge');
+      if (!d.fix) {
+        badge.className = 'badge no-fix';
+        badge.innerHTML = '<span class="dot"></span>No Fix';
+      } else if (d.mode === 2) {
+        badge.className = 'badge fix-2d';
+        badge.innerHTML = '<span class="dot"></span>2D Fix';
+      } else {
+        badge.className = 'badge fix-3d';
+        badge.innerHTML = '<span class="dot"></span>3D Fix';
+      }
+
+      set('lat',   d.lat  != null ? `<span class="card-value">${d.lat.toFixed(6)}°<span class="card-unit">${d.lat >= 0 ? 'N' : 'S'}</span></span>` : null);
+      set('lon',   d.lon  != null ? `<span class="card-value">${d.lon.toFixed(6)}°<span class="card-unit">${d.lon >= 0 ? 'E' : 'W'}</span></span>` : null);
+      set('alt',   fmt(d.alt,   1, ' m'));
+      set('speed', fmt(d.speed != null ? d.speed * 3.6 : null, 1, ' km/h'));
+      set('track', fmt(d.track, 1, '°'));
+      set('climb', fmt(d.climb, 2, ' m/s'));
+
+      if (d.satellites_used != null) {
+        set('sats', `<span class="card-value">${d.satellites_used}<span class="card-unit"> used</span></span>`);
+        document.getElementById('sats-sub').textContent = `${d.satellites_visible ?? '?'} visible`;
+      } else { set('sats', null); document.getElementById('sats-sub').textContent = ''; }
+
+      set('hdop', fmt(d.hdop, 1, ''));
+      document.getElementById('hdop-sub').textContent = hdopLabel(d.hdop);
+      set('pdop', fmt(d.pdop, 1, ''));
+
+      const herr = d.epx != null && d.epy != null ? Math.max(d.epx, d.epy) : null;
+      set('herr', fmt(herr, 1, ' m'));
+      set('verr', fmt(d.epv, 1, ' m'));
+
+      document.getElementById('footer-text').textContent = `Updated ${lastUpdate.toLocaleTimeString()}`;
+    } catch (e) {
+      document.getElementById('footer-text').textContent = 'Error fetching status';
+    }
+  }
+
+  // --- Message log ---
+  const MSG_CLASSES = ['TPV','SKY','ATT','GST'];
+  let logVisible = true;
+
+  function toggleLog() {
+    logVisible = !logVisible;
+    document.getElementById('log-box').classList.toggle('hidden', !logVisible);
+    document.getElementById('log-toggle').textContent = logVisible ? '▼ hide' : '▶ show';
+  }
+
+  function fmtFields(msg) {
+    const skip = new Set(['class', 'device', 'tag']);
+    return Object.entries(msg)
+      .filter(([k]) => !skip.has(k))
+      .map(([k, v]) => {
+        const vs = typeof v === 'number' ? (Number.isInteger(v) ? v : (+v).toFixed(4)) : JSON.stringify(v);
+        return `<span style="color:#4b5563">${k}=</span>${vs}`;
+      })
+      .join('  ');
+  }
+
+  async function refreshMessages() {
+    if (!logVisible) return;
+    try {
+      const r = await fetch('/api/messages');
+      const msgs = await r.json();
+      const box = document.getElementById('log-box');
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+      box.innerHTML = msgs.map(m => {
+        const cls = m.class || 'unknown';
+        const labelClass = MSG_CLASSES.includes(cls) ? cls : 'other';
+        return `<div class="log-row"><span class="log-class ${labelClass}">${cls}</span><span class="log-fields">${fmtFields(m)}</span></div>`;
+      }).join('');
+      if (atBottom) box.scrollTop = box.scrollHeight;
+    } catch (_) {}
+  }
+
+  refresh();
+  refreshMessages();
+  setInterval(refresh, 3000);
+  setInterval(refreshMessages, 3000);
+</script>
+</body>
+</html>

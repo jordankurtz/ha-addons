@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0
+
+- Add web UI via HA ingress: shows fix status, coordinates, altitude, satellite count, DOP accuracy values, speed, heading, and climb rate; auto-refreshes every 3 seconds
+
 ## 1.2.0
 
 - Auto-detection now uses glob patterns to discover all connected devices (any index), not just index 0
