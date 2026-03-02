@@ -29,7 +29,7 @@ bashio::log.debug "Configuration: gps_device='${gps_device}' update_ha_location=
 # --- Device detection ---
 if [ -z "${gps_device}" ]; then
     bashio::log.info "No GPS device configured, auto-detecting..."
-    for candidate in /dev/ttyACM0 /dev/ttyUSB0 /dev/ttyAMA0 /dev/ttyS0; do
+    for candidate in /dev/gps0 /dev/ttyACM0 /dev/ttyUSB0 /dev/ttyAMA0; do
         if [ -e "${candidate}" ]; then
             bashio::log.info "  ${candidate}: found"
             [ -z "${gps_device}" ] && gps_device="${candidate}"
@@ -39,7 +39,7 @@ if [ -z "${gps_device}" ]; then
     done
     [ -n "${gps_device}" ] && bashio::log.info "Using first detected device: ${gps_device}"
     if [ -z "${gps_device}" ]; then
-        bashio::log.fatal "No GPS device found. Connect a USB GPS and configure gps_device or ensure it appears at /dev/ttyACM0, /dev/ttyUSB0, /dev/ttyAMA0, or /dev/ttyS0."
+        bashio::log.fatal "No GPS device found. Connect a USB GPS and configure gps_device or ensure it appears at /dev/gps0, /dev/ttyACM0, /dev/ttyUSB0, or /dev/ttyAMA0."
         exit 1
     fi
 else

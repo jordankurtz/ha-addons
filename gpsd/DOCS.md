@@ -22,10 +22,10 @@ Other addons (such as PiAware) can connect to gpsd on port 2947 to obtain live p
 
 Path to the GPS serial device, e.g. `/dev/ttyACM0`. If left empty, the addon probes the following paths in order and uses the first one found:
 
-1. `/dev/ttyACM0`
-2. `/dev/ttyUSB0`
-3. `/dev/ttyAMA0`
-4. `/dev/ttyS0`
+1. `/dev/gps0` — symlink created by gpsd udev rules (most reliable)
+2. `/dev/ttyACM0` — USB CDC-ACM (most common for u-blox, SiRF modules)
+3. `/dev/ttyUSB0` — USB-to-serial adapter
+4. `/dev/ttyAMA0` — Raspberry Pi GPIO UART / HAT GPS modules
 
 The addon will fail to start if no device is found.
 

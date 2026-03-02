@@ -3,7 +3,7 @@ configuration:
     name: GPS Device
     description: >-
       Path to the GPS serial device (e.g., /dev/ttyACM0). Leave empty to
-      auto-detect from /dev/ttyACM0, /dev/ttyUSB0, /dev/ttyAMA0, /dev/ttyS0.
+      auto-detect from /dev/gps0, /dev/ttyACM0, /dev/ttyUSB0, /dev/ttyAMA0.
   update_ha_location:
     name: Update HA Home Zone
     description: >-
