@@ -1,7 +1,8 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
-ARG GPSD_VERSION=release-3.27.5
 
 FROM ${BUILD_FROM}
+
+ARG GPSD_VERSION=release-3.27.5
 
 # Build gpsd from source
 RUN apt-get update && apt-get install -y --no-install-recommends \
