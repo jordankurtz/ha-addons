@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0
+
+- Build gpsd 3.27.5 from source (GitLab upstream) instead of installing the Debian Bookworm package (3.24); includes CVE fixes and protocol improvements from 3.25–3.27.5
+- Version is pinned via `GPSD_VERSION` build arg (default: `release-3.27.5`)
+
 ## 1.4.0
 
 - Verify serial link to GPS module at startup via gpsd DEVICES response; logs driver name (u-blox, SiRF, etc.) on success or a clear warning if the module isn't responding

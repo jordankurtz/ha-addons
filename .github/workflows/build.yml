@@ -94,6 +94,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            GPSD_VERSION=release-3.27.5
 
   build-unbound:
     name: Build Unbound
