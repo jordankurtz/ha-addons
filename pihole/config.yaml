@@ -1,5 +1,5 @@
 name: Pi-hole
-version: "1.0.1"
+version: "1.1.0"
 slug: pihole
 description: Network-wide ad blocking via your own DNS server
 url: https://github.com/jordankurtz/ha-addons
@@ -40,6 +40,7 @@ options:
   conditional_forwarding_domain: ""
   conditional_forwarding_cidr: ""
   interface: "eth0"
+  listening_mode: local
   query_logging: true
 schema:
   dns1: str
@@ -51,4 +52,5 @@ schema:
   conditional_forwarding_domain: str?
   conditional_forwarding_cidr: str?
   interface: str?
+  listening_mode: list(local|single|bind|all)
   query_logging: bool

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Add `listening_mode` option (local|single|bind|all, default: local) — was previously hardcoded to "all"
+- Fix gravity update running before FTL is ready; now polls for FTL readiness before running `pihole -g`
+
 ## 1.0.1
 
 - Listen on all interfaces by default

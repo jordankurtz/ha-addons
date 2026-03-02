@@ -32,6 +32,13 @@ configuration:
   interface:
     name: Network Interface
     description: Network interface for Pi-hole to listen on.
+  listening_mode:
+    name: Listening Mode
+    description: >-
+      Controls which DNS requests Pi-hole accepts. "local" (recommended for
+      home use) allows only requests from devices one hop away. "single" and
+      "bind" restrict to the configured interface. "all" permits requests from
+      any origin — only safe if Pi-hole is not directly exposed to the internet.
   query_logging:
     name: Query Logging
     description: Enable logging of DNS queries.
