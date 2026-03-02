@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0
+
+- Bump Pi-hole to 2026.02.0 (Core v6.4, Web v6.4.1, FTL v6.5)
+
 ## 1.1.0
 
 - Add `listening_mode` option (local|single|bind|all, default: local) — was previously hardcoded to "all"
