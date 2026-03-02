@@ -53,10 +53,12 @@ fi
 # --- Graceful shutdown handler ---
 GPSD_PID=""
 LOOP_PID=""
+UI_PID=""
 
 cleanup() {
     bashio::log.info "Shutting down gpsd addon..."
     [ -n "${LOOP_PID}" ] && kill "${LOOP_PID}" 2>/dev/null
+    [ -n "${UI_PID}" ]   && kill "${UI_PID}"   2>/dev/null
     [ -n "${GPSD_PID}" ] && kill "${GPSD_PID}" 2>/dev/null
     wait
     exit 0
@@ -149,6 +151,11 @@ if bashio::var.true "${update_ha_location}"; then
 else
     bashio::log.info "HA location updates disabled."
 fi
+
+# --- Start status UI ---
+bashio::log.info "Starting GPS status UI on port 8080..."
+python3 /usr/share/gpsd-ui/server.py &
+UI_PID=$!
 
 # --- Monitor gpsd ---
 bashio::log.info "gpsd is running. Monitoring..."
