@@ -12,6 +12,7 @@ declare web_password
 declare dnssec
 declare conditional_forwarding
 declare interface
+declare listening_mode
 declare query_logging
 
 # --- Read configuration ---
@@ -21,6 +22,7 @@ web_password=$(bashio::config 'web_password' '')
 dnssec=$(bashio::config 'dnssec')
 conditional_forwarding=$(bashio::config 'conditional_forwarding')
 interface=$(bashio::config 'interface' 'eth0')
+listening_mode=$(bashio::config 'listening_mode' 'local')
 query_logging=$(bashio::config 'query_logging')
 
 # --- Set timezone from HA ---
@@ -56,7 +58,7 @@ if [ -n "${dns2}" ]; then
 fi
 
 export FTLCONF_dns_interface="${interface}"
-export FTLCONF_dns_listeningMode="all"
+export FTLCONF_dns_listeningMode="${listening_mode}"
 
 if [ -n "${web_password}" ]; then
     export FTLCONF_webserver_api_password="${web_password}"
@@ -192,11 +194,22 @@ trap 'bashio::log.info "Shutting down..."; kill ${NGINX_PID} 2>/dev/null; kill $
 pihole-FTL no-daemon &
 FTL_PID=$!
 
-# Wait for FTL to initialize, then update gravity
-sleep 5
-if kill -0 "${FTL_PID}" 2>/dev/null; then
+# Wait for FTL to be ready before updating gravity
+bashio::log.info "Waiting for Pi-hole FTL to be ready..."
+ftl_ready=false
+for i in $(seq 1 30); do
+    if kill -0 "${FTL_PID}" 2>/dev/null && pihole status 2>/dev/null | grep -q "FTL is listening"; then
+        ftl_ready=true
+        break
+    fi
+    sleep 2
+done
+
+if [ "${ftl_ready}" = "true" ]; then
     bashio::log.info "Updating Pi-hole gravity (blocklists)..."
     pihole -g || bashio::log.warning "Gravity update failed"
+else
+    bashio::log.warning "FTL did not become ready in time; skipping gravity update. Run 'pihole -g' manually."
 fi
 
 # Wait for any process to exit
