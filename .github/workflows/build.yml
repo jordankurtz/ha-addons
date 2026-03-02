@@ -59,7 +59,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
-            PIHOLE_VERSION=2025.03.0
+            PIHOLE_VERSION=2026.02.0
 
   build-piaware:
     name: Build PiAware

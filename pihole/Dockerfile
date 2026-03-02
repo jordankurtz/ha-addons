@@ -1,5 +1,5 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
-ARG PIHOLE_VERSION=2025.03.0
+ARG PIHOLE_VERSION=2026.02.0
 
 # Stage 1: Extract Pi-hole components from official image
 FROM pihole/pihole:${PIHOLE_VERSION} AS pihole-source
