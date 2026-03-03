@@ -42,6 +42,7 @@ options:
   interface: "eth0"
   listening_mode: local
   query_logging: true
+  ntp_sync: true
 schema:
   dns1: str
   dns2: str?
@@ -54,3 +55,4 @@ schema:
   interface: str?
   listening_mode: list(local|single|bind|all)
   query_logging: bool
+  ntp_sync: bool
