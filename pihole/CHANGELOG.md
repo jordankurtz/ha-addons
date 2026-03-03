@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+
+- Fix gravity update failing with `dig: command not found` — install `dnsutils` package
+- Fix `ntp_sync: false` not fully disabling NTP — now disables the FTL NTP server (IPv4 + IPv6) in addition to the client sync
+
 ## 1.3.0
 
 - Add `ntp_sync` option (default: true) — set to false to disable Pi-hole FTL's built-in NTP sync, useful when the host already runs an NTP daemon or the container lacks clock-setting privileges

@@ -82,8 +82,12 @@ fi
 
 if bashio::var.true "${ntp_sync}"; then
     export FTLCONF_ntp_sync_active="true"
+    export FTLCONF_ntp_ipv4_active="true"
+    export FTLCONF_ntp_ipv6_active="true"
 else
     export FTLCONF_ntp_sync_active="false"
+    export FTLCONF_ntp_ipv4_active="false"
+    export FTLCONF_ntp_ipv6_active="false"
 fi
 
 # --- Conditional forwarding ---
