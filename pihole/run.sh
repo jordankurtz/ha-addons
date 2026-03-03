@@ -14,6 +14,7 @@ declare conditional_forwarding
 declare interface
 declare listening_mode
 declare query_logging
+declare ntp_sync
 
 # --- Read configuration ---
 dns1=$(bashio::config 'dns1')
@@ -24,6 +25,7 @@ conditional_forwarding=$(bashio::config 'conditional_forwarding')
 interface=$(bashio::config 'interface' 'eth0')
 listening_mode=$(bashio::config 'listening_mode' 'local')
 query_logging=$(bashio::config 'query_logging')
+ntp_sync=$(bashio::config 'ntp_sync')
 
 # --- Set timezone from HA ---
 if bashio::supervisor.ping; then
@@ -76,6 +78,12 @@ if bashio::var.true "${query_logging}"; then
     export FTLCONF_dns_queryLogging="true"
 else
     export FTLCONF_dns_queryLogging="false"
+fi
+
+if bashio::var.true "${ntp_sync}"; then
+    export FTLCONF_ntp_sync_active="true"
+else
+    export FTLCONF_ntp_sync_active="false"
 fi
 
 # --- Conditional forwarding ---

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0
+
+- Add `ntp_sync` option (default: true) — set to false to disable Pi-hole FTL's built-in NTP sync, useful when the host already runs an NTP daemon or the container lacks clock-setting privileges
+
 ## 1.2.0
 
 - Bump Pi-hole to 2026.02.0 (Core v6.4, Web v6.4.1, FTL v6.5)
