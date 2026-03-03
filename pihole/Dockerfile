@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcap2-bin \
     libsqlite3-0 \
     curl \
+    dnsutils \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
