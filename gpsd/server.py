@@ -24,7 +24,7 @@ class GPSHandler(http.server.BaseHTTPRequestHandler):
     def _serve_status(self):
         try:
             result = subprocess.run(
-                ["gpspipe", "-w", "-n", "30", "-t", "10", "127.0.0.1"],
+                ["gpsd_client", "--count", "30", "--timeout", "10"],
                 capture_output=True,
                 text=True,
                 timeout=12,
@@ -88,7 +88,7 @@ class GPSHandler(http.server.BaseHTTPRequestHandler):
     def _serve_messages(self):
         try:
             result = subprocess.run(
-                ["gpspipe", "-w", "-n", "30", "-t", "10", "127.0.0.1"],
+                ["gpsd_client", "--count", "30", "--timeout", "10"],
                 capture_output=True,
                 text=True,
                 timeout=12,

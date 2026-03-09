@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 \
     && rm -rf /var/lib/apt/lists/*
 
+COPY gpsd_client.py /usr/local/bin/gpsd_client
+RUN chmod a+x /usr/local/bin/gpsd_client
+
 RUN mkdir -p /usr/share/gpsd-ui
 COPY index.html /usr/share/gpsd-ui/index.html
 COPY server.py /usr/share/gpsd-ui/server.py
