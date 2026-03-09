@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+- Replace `gpspipe` with Python `gpsd_client` for querying gpsd (fixes gpspipe 3.27.x hanging with no output)
+- Remove `gpsd-clients` package dependency
+
 ## 1.3.0
 
 - Add `gps_coordinate_updates` option: when enabled, PiAware polls gpsd periodically and restarts dump1090-fa when position changes by more than ~100m
