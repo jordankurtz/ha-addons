@@ -84,21 +84,34 @@ if ! kill -0 "${GPSD_PID}" 2>/dev/null; then
 fi
 bashio::log.info "gpsd started (PID: ${GPSD_PID})"
 
-# Wait for gpsd to accept connections (up to 8 s).
-# gpsd 3.27.x initialises its device before binding the TCP socket, so the
-# 1-second sleep above is not always sufficient.
-if ! python3 -c "
-import socket, sys, time
-for _ in range(8):
+# Wait for gpsd to accept connections (up to 10 s) and log what we get.
+# gpsd 3.27.x may take several seconds to bind the TCP socket after startup.
+gpsd_diag=$(python3 -c "
+import socket, sys, time, json
+
+for attempt in range(10):
     try:
-        socket.create_connection(('127.0.0.1', 2947), timeout=1).close()
+        s = socket.create_connection(('127.0.0.1', 2947), timeout=2)
+        s.settimeout(5)
+        # gpsd sends VERSION immediately on connect
+        data = s.recv(4096).decode('utf-8', errors='replace').strip()
+        s.close()
+        print(f'CONNECTED after {attempt + 1}s — first response: {data[:200]}')
         sys.exit(0)
-    except OSError:
+    except ConnectionRefusedError:
+        print(f'attempt {attempt + 1}: connection refused', file=sys.stderr)
         time.sleep(1)
+    except socket.timeout:
+        print(f'CONNECTED after {attempt + 1}s — but no data received (socket timeout)')
+        sys.exit(0)
+    except OSError as e:
+        print(f'attempt {attempt + 1}: {e}', file=sys.stderr)
+        time.sleep(1)
+
+print('FAILED — gpsd not accepting connections on 127.0.0.1:2947 after 10 attempts')
 sys.exit(1)
-" 2>/dev/null; then
-    bashio::log.warning "gpsd is not accepting connections on port 2947 — serial link verification may fail"
-fi
+" 2>&1)
+bashio::log.info "gpsd socket check: ${gpsd_diag}"
 
 # Verify the serial link is alive by checking the gpsd DEVICES response.
 # gpsd emits a DEVICES message within the first few JSON frames — it lists every
