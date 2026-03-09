@@ -118,7 +118,7 @@ bashio::log.info "gpsd socket check: ${gpsd_diag}"
 # device it has successfully opened and the driver it detected. An empty device
 # list or a missing 'activated' timestamp means the module isn't responding.
 bashio::log.info "Verifying serial link to ${gps_device}..."
-probe_output=$(timeout 15 gpspipe -w -n 5 -t 10 2>/dev/null || true)
+probe_output=$(timeout 15 gpsd_client --count 5 --timeout 10 2>/dev/null || true)
 bashio::log.trace "gpspipe probe output: ${probe_output}"
 
 device_info=$(echo "${probe_output}" \
@@ -150,7 +150,7 @@ update_ha_location_loop() {
         bashio::log.debug "Polling gpsd for TPV message..."
 
         # Collect up to 30 JSON messages from gpsd, timeout 30s
-        raw=$(timeout 35 gpspipe -w -n 30 -t 30 2>/dev/null || true)
+        raw=$(timeout 35 gpsd_client --count 30 --timeout 30 2>/dev/null || true)
         bashio::log.trace "gpspipe raw output: ${raw}"
 
         # Find the last TPV message with a valid fix, sufficient mode, and coordinates
