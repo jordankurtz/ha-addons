@@ -165,7 +165,7 @@ update_ha_location_loop() {
             consecutive_misses=0
             lat=$(echo "${fix}" | jq -r '.lat')
             lon=$(echo "${fix}" | jq -r '.lon')
-            alt=$(echo "${fix}" | jq -r '.alt // empty')
+            alt=$(echo "${fix}" | jq -r 'if .alt then (.alt | round) else empty end')
             mode=$(echo "${fix}" | jq -r '.mode')
 
             bashio::log.info "GPS fix: lat=${lat}, lon=${lon}${alt:+, alt=${alt}m}"
