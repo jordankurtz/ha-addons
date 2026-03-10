@@ -3,8 +3,8 @@ build_from:
   aarch64: ghcr.io/home-assistant/aarch64-base-debian:bookworm
   armv7: ghcr.io/home-assistant/armv7-base-debian:bookworm
 args:
-  DUMP1090_VERSION: "v9.0"
-  PIAWARE_BUILDER_VERSION: "v9.0.1"
+  DUMP1090_VERSION: "v10.2"
+  PIAWARE_BUILDER_VERSION: "v10.2"
 labels:
   org.opencontainers.image.title: "Home Assistant Add-on: PiAware"
   org.opencontainers.image.description: "ADS-B receiver with PiAware, dump1090-fa, and SkyAware"
