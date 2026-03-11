@@ -3,6 +3,7 @@ version: "1.0.0"
 slug: ultrafeeder
 description: ADS-B receiver with readsb, tar1090, and multi-service feeding
 url: https://github.com/jordankurtz/ha-addons
+image: ghcr.io/jordankurtz/ha-addon-ultrafeeder-{arch}
 arch:
   - amd64
   - aarch64
