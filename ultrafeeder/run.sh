@@ -148,8 +148,8 @@ READSB_STATIC_ARGS=(
     --json-location-accuracy 1
     --write-json /run/readsb
     --write-json-every 1
-    --write-json-globe-history /data/ultrafeeder/globe_history
     --write-globe-history /data/ultrafeeder/globe_history
+    --write-json-globe-index
     --heatmap-dir /data/ultrafeeder/heatmap
     --heatmap 15
     --quiet
