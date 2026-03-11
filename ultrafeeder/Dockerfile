@@ -131,6 +131,12 @@ RUN apt-get purge -y --auto-remove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Reinstall runtime libraries removed by auto-remove
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libncurses6 libzstd1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY gpsd_client.py /usr/local/bin/gpsd_client
 RUN chmod a+x /usr/local/bin/gpsd_client
 
