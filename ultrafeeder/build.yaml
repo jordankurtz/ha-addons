@@ -1,0 +1,14 @@
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base-debian:bookworm
+  aarch64: ghcr.io/home-assistant/aarch64-base-debian:bookworm
+  armv7: ghcr.io/home-assistant/armv7-base-debian:bookworm
+args:
+  READSB_VERSION: "dev"
+  TAR1090_VERSION: "master"
+  MLAT_CLIENT_VERSION: "master"
+  PIAWARE_BUILDER_VERSION: "v9.0.1"
+labels:
+  org.opencontainers.image.title: "Home Assistant Add-on: Ultrafeeder"
+  org.opencontainers.image.description: "ADS-B receiver with readsb, tar1090, and multi-service feeding"
+  org.opencontainers.image.source: "https://github.com/jordankurtz/ha-addons"
+  org.opencontainers.image.licenses: "MIT"

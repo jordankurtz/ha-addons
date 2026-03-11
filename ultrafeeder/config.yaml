@@ -1,0 +1,94 @@
+name: Ultrafeeder
+version: "1.0.0"
+slug: ultrafeeder
+description: ADS-B receiver with readsb, tar1090, and multi-service feeding
+url: https://github.com/jordankurtz/ha-addons
+arch:
+  - amd64
+  - aarch64
+  - armv7
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:airplane-marker
+panel_title: tar1090
+startup: application
+init: false
+usb: true
+uart: true
+full_access: true
+map:
+  - type: data
+    read_only: false
+ports:
+  8080/tcp: null
+  30003/tcp: 30003
+  30005/tcp: 30005
+ports_description:
+  8080/tcp: tar1090 web map (handled by ingress)
+  30003/tcp: SBS BaseStation format output
+  30005/tcp: Beast protocol output
+options:
+  gps_source: manual
+  gpsd_host: ""
+  gpsd_port: 2947
+  gps_coordinate_updates: false
+  gps_coordinate_update_interval: 60
+  latitude: 0.0
+  longitude: 0.0
+  altitude_ft: 0
+  altitude_m: 0
+  receiver_type: rtlsdr
+  gain: "auto"
+  rtlsdr_ppm: 0
+  rtlsdr_device_serial: ""
+  feed_flightaware: false
+  flightaware_feeder_id: ""
+  flightaware_allow_mlat: true
+  feed_adsb_fi: false
+  adsb_fi_uuid: ""
+  feed_adsbexchange: false
+  adsbexchange_uuid: ""
+  feed_adsb_lol: false
+  adsb_lol_uuid: ""
+  feed_airplanes_live: false
+  airplanes_live_uuid: ""
+  feed_planespotters: false
+  planespotters_uuid: ""
+  feed_theairtraffic: false
+  theairtraffic_uuid: ""
+  custom_feeds: []
+  log_level: info
+schema:
+  gps_source: list(manual|gpsd)
+  gpsd_host: str?
+  gpsd_port: int?
+  gps_coordinate_updates: bool
+  gps_coordinate_update_interval: "int(30,3600)"
+  latitude: float?
+  longitude: float?
+  altitude_ft: int?
+  altitude_m: int?
+  receiver_type: list(rtlsdr|beast|relay)
+  gain: str
+  rtlsdr_ppm: int?
+  rtlsdr_device_serial: str?
+  feed_flightaware: bool
+  flightaware_feeder_id: str?
+  flightaware_allow_mlat: bool
+  feed_adsb_fi: bool
+  adsb_fi_uuid: str?
+  feed_adsbexchange: bool
+  adsbexchange_uuid: str?
+  feed_adsb_lol: bool
+  adsb_lol_uuid: str?
+  feed_airplanes_live: bool
+  airplanes_live_uuid: str?
+  feed_planespotters: bool
+  planespotters_uuid: str?
+  feed_theairtraffic: bool
+  theairtraffic_uuid: str?
+  custom_feeds:
+    - host: str
+      beast_port: port
+      mlat_port: port?
+  log_level: list(trace|debug|info|notice|warning)

@@ -1,0 +1,91 @@
+configuration:
+  gps_source:
+    name: GPS Source
+    description: Source for receiver coordinates (manual entry or gpsd addon)
+  gpsd_host:
+    name: gpsd Host
+    description: Hostname or IP of the gpsd server (defaults to homeassistant.local)
+  gpsd_port:
+    name: gpsd Port
+    description: TCP port for gpsd (default 2947)
+  gps_coordinate_updates:
+    name: GPS Coordinate Updates
+    description: Periodically poll gpsd for position changes and update readsb
+  gps_coordinate_update_interval:
+    name: GPS Update Interval
+    description: Seconds between GPS coordinate polls (30-3600)
+  latitude:
+    name: Latitude
+    description: Receiver latitude (required for manual GPS source)
+  longitude:
+    name: Longitude
+    description: Receiver longitude (required for manual GPS source)
+  altitude_ft:
+    name: Altitude (feet)
+    description: Antenna altitude above sea level in feet
+  altitude_m:
+    name: Altitude (meters)
+    description: Antenna altitude above sea level in meters (takes precedence over feet)
+  receiver_type:
+    name: Receiver Type
+    description: "SDR device type: rtlsdr (local dongle), beast (Beast protocol input), or relay (network-only)"
+  gain:
+    name: Gain
+    description: "Receiver gain: auto, max, or a specific dB value"
+  rtlsdr_ppm:
+    name: RTL-SDR PPM Correction
+    description: Frequency correction in parts per million
+  rtlsdr_device_serial:
+    name: RTL-SDR Device Serial
+    description: Serial number of a specific RTL-SDR dongle (leave empty for first available)
+  feed_flightaware:
+    name: Feed FlightAware
+    description: Enable feeding to FlightAware via built-in PiAware
+  flightaware_feeder_id:
+    name: FlightAware Feeder ID
+    description: FlightAware feeder UUID (leave empty to auto-generate)
+  flightaware_allow_mlat:
+    name: FlightAware MLAT
+    description: Allow multilateration for FlightAware
+  feed_adsb_fi:
+    name: Feed adsb.fi
+    description: Enable feeding to adsb.fi
+  adsb_fi_uuid:
+    name: adsb.fi UUID
+    description: Your adsb.fi feeder UUID (leave empty to auto-generate)
+  feed_adsbexchange:
+    name: Feed ADSBExchange
+    description: Enable feeding to ADSBExchange
+  adsbexchange_uuid:
+    name: ADSBExchange UUID
+    description: Your ADSBExchange feeder UUID (leave empty to auto-generate)
+  feed_adsb_lol:
+    name: Feed adsb.lol
+    description: Enable feeding to adsb.lol
+  adsb_lol_uuid:
+    name: adsb.lol UUID
+    description: Your adsb.lol feeder UUID (leave empty to auto-generate)
+  feed_airplanes_live:
+    name: Feed airplanes.live
+    description: Enable feeding to airplanes.live
+  airplanes_live_uuid:
+    name: airplanes.live UUID
+    description: Your airplanes.live feeder UUID (leave empty to auto-generate)
+  feed_planespotters:
+    name: Feed planespotters.net
+    description: Enable feeding to planespotters.net
+  planespotters_uuid:
+    name: planespotters.net UUID
+    description: Your planespotters.net feeder UUID (leave empty to auto-generate)
+  feed_theairtraffic:
+    name: Feed theairtraffic.com
+    description: Enable feeding to theairtraffic.com
+  theairtraffic_uuid:
+    name: theairtraffic.com UUID
+    description: Your theairtraffic.com feeder UUID (leave empty to auto-generate)
+  custom_feeds:
+    name: Custom Feeds
+    description: Additional aggregator feeds
+  log_level:
+    name: Log Level
+    description: Logging verbosity

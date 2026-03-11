@@ -24,6 +24,7 @@ jobs:
       piaware: ${{ steps.filter.outputs.piaware || steps.force.outputs.all }}
       unbound: ${{ steps.filter.outputs.unbound || steps.force.outputs.all }}
       gpsd: ${{ steps.filter.outputs.gpsd || steps.force.outputs.all }}
+      ultrafeeder: ${{ steps.filter.outputs.ultrafeeder || steps.force.outputs.all }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -39,6 +40,8 @@ jobs:
               - 'unbound/**'
             gpsd:
               - 'gpsd/**'
+            ultrafeeder:
+              - 'ultrafeeder/**'
       - name: Force all builds on dispatch
         if: github.event_name == 'workflow_dispatch'
         id: force
@@ -111,6 +114,26 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+
+  build-ultrafeeder:
+    name: Build Ultrafeeder
+    needs: changes
+    if: needs.changes.outputs.ultrafeeder == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ultrafeeder
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            READSB_VERSION=dev
+            TAR1090_VERSION=master
+            MLAT_CLIENT_VERSION=master
+            PIAWARE_BUILDER_VERSION=v9.0.1
 
   check-updates:
     name: Check dependency updates
