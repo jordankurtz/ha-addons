@@ -1,5 +1,5 @@
 name: Ultrafeeder
-version: "1.0.2"
+version: "1.0.3"
 slug: ultrafeeder
 description: ADS-B receiver with readsb, tar1090, and multi-service feeding
 url: https://github.com/jordankurtz/ha-addons
@@ -21,7 +21,7 @@ map:
   - type: data
     read_only: false
 ports:
-  8080/tcp: null
+  8080/tcp: 8080
   30003/tcp: 30003
   30005/tcp: 30005
 ports_description:
