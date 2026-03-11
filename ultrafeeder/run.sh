@@ -148,6 +148,10 @@ READSB_STATIC_ARGS=(
     --json-location-accuracy 1
     --write-json /run/readsb
     --write-json-every 1
+    --write-json-globe-history /data/ultrafeeder/globe_history
+    --write-globe-history /data/ultrafeeder/globe_history
+    --heatmap-dir /data/ultrafeeder/heatmap
+    --heatmap 15
     --quiet
 )
 
@@ -258,6 +262,9 @@ configure_tar1090() {
         else
             echo "SiteShow = false;"
         fi
+        echo "EnableHeatmap = true;"
+        echo "HeatmapDir = \"/heatmap/\";"
+        echo "GlobeHistoryDir = \"/globe_history/\";"
     } > "${config_file}"
 }
 
@@ -469,7 +476,7 @@ cleanup() {
 trap cleanup SIGTERM SIGINT
 
 # --- Persistent data directory ---
-mkdir -p /data/ultrafeeder
+mkdir -p /data/ultrafeeder /data/ultrafeeder/globe_history /data/ultrafeeder/heatmap
 
 # --- Configure tar1090 ---
 configure_tar1090
