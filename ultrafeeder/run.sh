@@ -151,7 +151,6 @@ READSB_STATIC_ARGS=(
     --write-globe-history /data/ultrafeeder/globe_history
     --write-json-globe-index
     --heatmap-dir /data/ultrafeeder/heatmap
-    --heatmap 15
     --quiet
 )
 
