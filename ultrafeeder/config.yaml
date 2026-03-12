@@ -1,5 +1,5 @@
 name: Ultrafeeder
-version: "1.0.5"
+version: "1.0.6"
 slug: ultrafeeder
 description: ADS-B receiver with readsb, tar1090, and multi-service feeding
 url: https://github.com/jordankurtz/ha-addons

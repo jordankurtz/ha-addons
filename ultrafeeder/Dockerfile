@@ -69,6 +69,14 @@ RUN set -ex && \
     cp -r /tmp/tar1090/html/* /usr/local/share/tar1090/html/ && \
     rm -rf /tmp/tar1090
 
+# Install aircraft database from dump1090 (for PiAwareMobile API compatibility)
+ARG DUMP1090_VERSION=v9.0
+RUN set -ex && \
+    git clone --branch ${DUMP1090_VERSION} --depth 1 \
+        https://github.com/flightaware/dump1090.git /tmp/dump1090 && \
+    cp -r /tmp/dump1090/public_html/db /usr/local/share/tar1090/html/db && \
+    rm -rf /tmp/dump1090
+
 # Build mlat-client
 RUN set -ex && \
     git clone --branch ${MLAT_CLIENT_VERSION} --depth 1 \
