@@ -151,6 +151,7 @@ READSB_STATIC_ARGS=(
     --write-globe-history /data/ultrafeeder/globe_history
     --write-json-globe-index
     --heatmap-dir /data/ultrafeeder/heatmap
+    --trace-recent-points 200
     --quiet
 )
 
@@ -457,30 +458,10 @@ gps_monitor_loop() {
     done
 }
 
-# --- History file writer ---
-# Writes rolling history_N.json snapshots every 30 seconds for PiAwareMobile compatibility.
-# dump1090-fa writes these natively; readsb with globe history does not.
-HISTORY_MAX=120
-HISTORY_DIR="/run/readsb"
-
-history_writer_loop() {
-    local index=0
-    bashio::log.info "History writer started (${HISTORY_MAX} slots, 30s interval)"
-    while true; do
-        sleep 30
-        if [ -f "${HISTORY_DIR}/aircraft.json" ]; then
-            cp "${HISTORY_DIR}/aircraft.json" "${HISTORY_DIR}/history_${index}.json"
-            index=$(( (index + 1) % HISTORY_MAX ))
-        fi
-    done
-}
-
 # --- Graceful shutdown handler ---
-HISTORY_PID=""
 
 cleanup() {
     bashio::log.info "Shutting down..."
-    [ -n "${HISTORY_PID}" ] && kill "${HISTORY_PID}" 2>/dev/null
     [ -n "${GPS_MONITOR_PID}" ] && kill "${GPS_MONITOR_PID}" 2>/dev/null
     [ -n "${READSB_PID}" ] && kill "${READSB_PID}" 2>/dev/null
     [ -n "${LIGHTTPD_PID}" ] && kill "${LIGHTTPD_PID}" 2>/dev/null
@@ -532,19 +513,6 @@ fi
 
 # --- Start MLAT clients ---
 start_mlat_clients
-
-# --- Start history writer and patch receiver.json history count ---
-history_writer_loop &
-HISTORY_PID=$!
-# Patch receiver.json to report correct history count (readsb defaults to 1)
-(
-    sleep 5
-    if [ -f /run/readsb/receiver.json ]; then
-        jq --argjson h "${HISTORY_MAX}" '.history = $h' /run/readsb/receiver.json > /run/readsb/receiver.json.tmp \
-            && mv /run/readsb/receiver.json.tmp /run/readsb/receiver.json
-        bashio::log.debug "Patched receiver.json with history=${HISTORY_MAX}"
-    fi
-) &
 
 # --- Start GPS coordinate monitor ---
 if [ "${gps_source}" = "gpsd" ] && bashio::var.true "${gps_coordinate_updates}"; then
