@@ -244,7 +244,6 @@ start_readsb() {
     readsb "${args[@]}" &
     local pid=$!
     echo "${pid}" > "${READSB_PID_FILE}"
-    echo "${pid}"
 }
 
 # --- Configure tar1090 ---
@@ -488,7 +487,8 @@ bashio::log.info "  Altitude:      ${altitude_m}m"
 bashio::log.info "  Gain:          ${gain}"
 bashio::log.info "  Receiver type: ${receiver_type}"
 
-READSB_PID=$(start_readsb "${latitude}" "${longitude}")
+start_readsb "${latitude}" "${longitude}"
+READSB_PID=$(cat "${READSB_PID_FILE}")
 
 sleep 3
 
@@ -531,7 +531,8 @@ while true; do
             rm -f "${COORD_UPDATE_FILE}"
             bashio::log.info "Restarting readsb with updated coordinates: lat=${latitude}, lon=${longitude}"
             configure_tar1090
-            READSB_PID=$(start_readsb "${latitude}" "${longitude}")
+            start_readsb "${latitude}" "${longitude}"
+READSB_PID=$(cat "${READSB_PID_FILE}")
             sleep 3
             if ! kill -0 "${READSB_PID}" 2>/dev/null; then
                 bashio::log.error "readsb failed to restart after coordinate update!"
