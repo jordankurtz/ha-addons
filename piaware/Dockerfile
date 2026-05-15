@@ -48,7 +48,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     procps \
     curl \
-    gpsd-clients \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
@@ -108,6 +107,9 @@ RUN apt-get purge -y --auto-remove \
     wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+COPY gpsd_client.py /usr/local/bin/gpsd_client
+RUN chmod a+x /usr/local/bin/gpsd_client
 
 # Copy run script
 COPY run.sh /

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.2
+
+- Round GPS elevation to integer when updating HA home zone (fixes HTTP 400 from `set_location` service)
+
 ## 1.5.1
 
 - Fix startup hang caused by gpsd 3.27.x binding its TCP socket after device initialisation; now polls for socket readiness (up to 8 s) before probing and logs a clear warning if the port never comes up

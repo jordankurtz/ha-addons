@@ -50,8 +50,8 @@ if [ "${gps_source}" = "gpsd" ]; then
     fix=""
     for attempt in 1 2 3 4 5; do
         bashio::log.info "Querying gpsd for fix (attempt ${attempt}/5)..."
-        raw=$(gpspipe -w -n 30 -t 30 -h "${gpsd_host}" -p "${gpsd_port}" 2>/dev/null || true)
-        bashio::log.trace "gpspipe raw output: ${raw}"
+        raw=$(gpsd_client --host "${gpsd_host}" --port "${gpsd_port}" --count 30 --timeout 30 2>/dev/null || true)
+        bashio::log.trace "gpsd_client raw output: ${raw}"
         fix=$(echo "${raw}" | jq -c 'select(.class=="TPV") | select(.mode>=2) | select(.lat!=null and .lon!=null)' | tail -1)
         bashio::log.debug "Parsed fix: ${fix:-<none>}"
         [ -n "${fix}" ] && break
@@ -201,8 +201,8 @@ gps_monitor_loop() {
     while true; do
         sleep "${gps_coordinate_update_interval}"
 
-        raw=$(gpspipe -w -n 30 -t 30 -h "${gpsd_host}" -p "${gpsd_port}" 2>/dev/null || true)
-        bashio::log.trace "GPS monitor gpspipe output: ${raw}"
+        raw=$(gpsd_client --host "${gpsd_host}" --port "${gpsd_port}" --count 30 --timeout 30 2>/dev/null || true)
+        bashio::log.trace "GPS monitor gpsd_client output: ${raw}"
         fix=$(echo "${raw}" | jq -c 'select(.class=="TPV") | select(.mode>=2) | select(.lat!=null and .lon!=null)' | tail -1)
 
         if [ -z "${fix}" ]; then
