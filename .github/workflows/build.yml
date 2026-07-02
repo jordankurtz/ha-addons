@@ -48,9 +48,26 @@ jobs:
         run: echo "all=true" >> "$GITHUB_OUTPUT"
 
   build-pihole:
-    name: Build & Push Pi-hole
+    name: Build Pi-hole
     needs: changes
     if: needs.changes.outputs.pihole == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: pihole
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            PIHOLE_VERSION=2026.02.0
+
+  publish-pihole:
+    name: Publish Pi-hole
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.pihole == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -85,7 +102,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: pihole
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: true
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
@@ -95,9 +112,27 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/ha-addon-pihole-${{ matrix.arch }}:latest
 
   build-piaware:
-    name: Build & Push PiAware
+    name: Build PiAware
     needs: changes
     if: needs.changes.outputs.piaware == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: piaware
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            DUMP1090_VERSION=v9.0
+            PIAWARE_BUILDER_VERSION=v9.0.1
+
+  publish-piaware:
+    name: Publish PiAware
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.piaware == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -128,7 +163,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: piaware
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: true
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
@@ -139,9 +174,26 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/ha-addon-piaware-${{ matrix.arch }}:latest
 
   build-gpsd:
-    name: Build & Push gpsd
+    name: Build gpsd
     needs: changes
     if: needs.changes.outputs.gpsd == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: gpsd
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            GPSD_VERSION=release-3.27.5
+
+  publish-gpsd:
+    name: Publish gpsd
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.gpsd == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -172,7 +224,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: gpsd
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: true
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
@@ -182,9 +234,25 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/ha-addon-gpsd-${{ matrix.arch }}:latest
 
   build-unbound:
-    name: Build & Push Unbound
+    name: Build Unbound
     needs: changes
     if: needs.changes.outputs.unbound == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: unbound
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+
+  publish-unbound:
+    name: Publish Unbound
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.unbound == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -219,7 +287,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: unbound
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: true
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
