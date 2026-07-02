@@ -300,6 +300,27 @@ jobs:
     needs: changes
     if: needs.changes.outputs.ultrafeeder == 'true'
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ultrafeeder
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            READSB_VERSION=v3.16.15
+            TAR1090_VERSION=cbcf0260d99b29afb9fc00dc3271ac0e937b2819
+            MLAT_CLIENT_VERSION=v0.4.2
+            DUMP1090_VERSION=v9.0
+            PIAWARE_BUILDER_VERSION=v9.0.1
+
+  publish-ultrafeeder:
+    name: Publish Ultrafeeder
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.ultrafeeder == 'true'
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -329,7 +350,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ultrafeeder
-          push: ${{ github.event_name == 'push' }}
+          push: true
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
