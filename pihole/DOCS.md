@@ -6,6 +6,18 @@ Pi-hole is a network-wide ad blocker that acts as a DNS sinkhole. This add-on
 runs Pi-hole v6 with FTL DNS on your Home Assistant instance, allowing you to
 block ads and trackers for all devices on your network.
 
+## Component versions
+
+This add-on currently bundles:
+
+| Component | Version   |
+| --------- | --------- |
+| Pi-hole   | 2026.02.0 |
+
+The addon's own version (see `config.yaml`) is bumped separately from the
+bundled component version above — see the root [README](../README.md) for
+how the two relate.
+
 ## How it works
 
 Pi-hole intercepts DNS queries from your network devices and blocks requests to

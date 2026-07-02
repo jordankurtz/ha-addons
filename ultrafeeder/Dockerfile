@@ -2,9 +2,10 @@ ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
 
 FROM ${BUILD_FROM}
 
-ARG READSB_VERSION=dev
-ARG TAR1090_VERSION=master
-ARG MLAT_CLIENT_VERSION=master
+ARG READSB_VERSION=v3.16.15
+ARG TAR1090_VERSION=cbcf0260d99b29afb9fc00dc3271ac0e937b2819
+ARG MLAT_CLIENT_VERSION=v0.4.2
+ARG DUMP1090_VERSION=v9.0
 ARG PIAWARE_BUILDER_VERSION=v9.0.1
 
 # Install build + runtime dependencies
@@ -61,16 +62,17 @@ RUN set -ex && \
     cp viewadsb /usr/bin/viewadsb && \
     rm -rf /tmp/readsb
 
-# Install tar1090 web UI
+# Install tar1090 web UI (pinned to a commit SHA — upstream has no version tags)
 RUN set -ex && \
-    git clone --branch ${TAR1090_VERSION} --depth 1 \
-        https://github.com/wiedehopf/tar1090.git /tmp/tar1090 && \
+    git init /tmp/tar1090 && cd /tmp/tar1090 && \
+    git remote add origin https://github.com/wiedehopf/tar1090.git && \
+    git fetch --depth 1 origin ${TAR1090_VERSION} && \
+    git checkout FETCH_HEAD && \
     mkdir -p /usr/local/share/tar1090/html && \
     cp -r /tmp/tar1090/html/* /usr/local/share/tar1090/html/ && \
-    rm -rf /tmp/tar1090
+    cd / && rm -rf /tmp/tar1090
 
 # Install aircraft database from dump1090 (for PiAwareMobile API compatibility)
-ARG DUMP1090_VERSION=v9.0
 RUN set -ex && \
     git clone --branch ${DUMP1090_VERSION} --depth 1 \
         https://github.com/flightaware/dump1090.git /tmp/dump1090 && \

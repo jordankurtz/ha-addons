@@ -2,6 +2,24 @@
 
 ADS-B receiver addon built around **readsb** (actively maintained dump1090 fork), **tar1090** (aircraft map web UI), and multi-service feeding to all major ADS-B aggregators.
 
+## Component versions
+
+This add-on currently bundles:
+
+| Component                 | Version                                    |
+| -------------------------- | ------------------------------------------- |
+| readsb                     | v3.16.15                                    |
+| tar1090                    | cbcf0260d99b29afb9fc00dc3271ac0e937b2819    |
+| mlat-client                | v0.4.2                                      |
+| dump1090 (aircraft DB)     | v9.0                                        |
+| PiAware (piaware_builder)  | v9.0.1                                      |
+
+tar1090 is pinned to a commit SHA rather than a version tag — upstream
+(`wiedehopf/tar1090`) doesn't publish version tags, only a rolling `master`
+branch. The addon's own version (see `config.yaml`) is bumped separately
+from the bundled component versions above — see the root
+[README](../README.md) for how the two relate.
+
 ## Features
 
 - **readsb** decoder with RTL-SDR, Beast, or relay input
