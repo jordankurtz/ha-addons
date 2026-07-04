@@ -24,6 +24,7 @@ jobs:
       piaware: ${{ steps.filter.outputs.piaware || steps.force.outputs.all }}
       unbound: ${{ steps.filter.outputs.unbound || steps.force.outputs.all }}
       gpsd: ${{ steps.filter.outputs.gpsd || steps.force.outputs.all }}
+      ultrafeeder: ${{ steps.filter.outputs.ultrafeeder || steps.force.outputs.all }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -39,6 +40,8 @@ jobs:
               - 'unbound/**'
             gpsd:
               - 'gpsd/**'
+            ultrafeeder:
+              - 'ultrafeeder/**'
       - name: Force all builds on dispatch
         if: github.event_name == 'workflow_dispatch'
         id: force
@@ -61,6 +64,53 @@ jobs:
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
             PIHOLE_VERSION=2026.02.0
 
+  publish-pihole:
+    name: Publish Pi-hole
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.pihole == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+          - arch: armhf
+            platform: linux/arm/v6
+          - arch: i386
+            platform: linux/386
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read version from config.yaml
+        id: version
+        run: |
+          version=$(grep '^version:' pihole/config.yaml | sed 's/version: *"\(.*\)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: pihole
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
+            PIHOLE_VERSION=2026.02.0
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ha-addon-pihole-${{ matrix.arch }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/ha-addon-pihole-${{ matrix.arch }}:latest
+
   build-piaware:
     name: Build PiAware
     needs: changes
@@ -79,6 +129,50 @@ jobs:
             DUMP1090_VERSION=v9.0
             PIAWARE_BUILDER_VERSION=v9.0.1
 
+  publish-piaware:
+    name: Publish PiAware
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.piaware == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read version from config.yaml
+        id: version
+        run: |
+          version=$(grep '^version:' piaware/config.yaml | sed 's/version: *"\(.*\)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: piaware
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
+            DUMP1090_VERSION=v9.0
+            PIAWARE_BUILDER_VERSION=v9.0.1
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ha-addon-piaware-${{ matrix.arch }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/ha-addon-piaware-${{ matrix.arch }}:latest
+
   build-gpsd:
     name: Build gpsd
     needs: changes
@@ -96,6 +190,49 @@ jobs:
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
             GPSD_VERSION=release-3.27.5
 
+  publish-gpsd:
+    name: Publish gpsd
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.gpsd == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read version from config.yaml
+        id: version
+        run: |
+          version=$(grep '^version:' gpsd/config.yaml | sed 's/version: *"\(.*\)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: gpsd
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
+            GPSD_VERSION=release-3.27.5
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ha-addon-gpsd-${{ matrix.arch }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/ha-addon-gpsd-${{ matrix.arch }}:latest
+
   build-unbound:
     name: Build Unbound
     needs: changes
@@ -111,6 +248,120 @@ jobs:
           platforms: linux/amd64
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+
+  publish-unbound:
+    name: Publish Unbound
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.unbound == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+          - arch: armhf
+            platform: linux/arm/v6
+          - arch: i386
+            platform: linux/386
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read version from config.yaml
+        id: version
+        run: |
+          version=$(grep '^version:' unbound/config.yaml | sed 's/version: *"\(.*\)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: unbound
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ha-addon-unbound-${{ matrix.arch }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/ha-addon-unbound-${{ matrix.arch }}:latest
+
+  build-ultrafeeder:
+    name: Build & Push Ultrafeeder
+    needs: changes
+    if: needs.changes.outputs.ultrafeeder == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ultrafeeder
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+            READSB_VERSION=v3.16.15
+            TAR1090_VERSION=cbcf0260d99b29afb9fc00dc3271ac0e937b2819
+            MLAT_CLIENT_VERSION=v0.4.2
+            DUMP1090_VERSION=v9.0
+            PIAWARE_BUILDER_VERSION=v9.0.1
+
+  publish-ultrafeeder:
+    name: Publish Ultrafeeder
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.ultrafeeder == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read version from config.yaml
+        id: version
+        run: |
+          version=$(grep '^version:' ultrafeeder/config.yaml | sed 's/version: *"\(.*\)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ultrafeeder
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm
+            READSB_VERSION=v3.16.15
+            TAR1090_VERSION=cbcf0260d99b29afb9fc00dc3271ac0e937b2819
+            MLAT_CLIENT_VERSION=v0.4.2
+            DUMP1090_VERSION=v9.0
+            PIAWARE_BUILDER_VERSION=v9.0.1
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ha-addon-ultrafeeder-${{ matrix.arch }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/ha-addon-ultrafeeder-${{ matrix.arch }}:latest
 
   check-updates:
     name: Check dependency updates
@@ -132,68 +383,171 @@ jobs:
           current_dump1090=$(grep 'DUMP1090_VERSION:' piaware/build.yaml | sed 's/.*"\(.*\)".*/\1/')
           current_piaware=$(grep 'PIAWARE_BUILDER_VERSION:' piaware/build.yaml | sed 's/.*"\(.*\)".*/\1/')
           current_gpsd=$(grep 'GPSD_VERSION:' gpsd/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+          current_readsb=$(grep 'READSB_VERSION:' ultrafeeder/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+          current_tar1090=$(grep 'TAR1090_VERSION:' ultrafeeder/build.yaml | sed 's/.*"\(.*\)".*/\1/')
+          current_mlat=$(grep 'MLAT_CLIENT_VERSION:' ultrafeeder/build.yaml | sed 's/.*"\(.*\)".*/\1/')
 
           echo "Current versions:"
           echo "  Pi-hole: $current_pihole"
           echo "  dump1090: $current_dump1090"
           echo "  PiAware: $current_piaware"
           echo "  gpsd: $current_gpsd"
+          echo "  readsb: $current_readsb"
+          echo "  tar1090: $current_tar1090"
+          echo "  mlat-client: $current_mlat"
 
           # Fetch latest versions
-          # Pi-hole publishes GitHub releases; FlightAware repos use tags only
+          # Pi-hole publishes GitHub releases; FlightAware/wiedehopf repos use tags only
           # gpsd is hosted on GitLab — fetch tags matching release-* via the GitLab API
+          # tar1090 publishes no version tags at all — track its latest commit SHA instead
           latest_pihole=$(gh api repos/pi-hole/docker-pi-hole/releases/latest --jq '.tag_name')
           latest_dump1090=$(gh api repos/flightaware/dump1090/tags --jq '.[0].name')
           latest_piaware=$(gh api repos/flightaware/piaware_builder/tags --jq '.[0].name')
           latest_gpsd=$(curl -sf "https://gitlab.com/api/v4/projects/gpsd%2Fgpsd/repository/tags?order_by=version&sort=desc&search=release-&per_page=1" \
             | jq -r '.[0].name')
+          latest_readsb=$(gh api "repos/wiedehopf/readsb/tags?per_page=100" --jq '.[].name' | sort -V | tail -1)
+          latest_tar1090=$(gh api repos/wiedehopf/tar1090/commits --jq '.[0].sha')
+          latest_mlat=$(gh api "repos/wiedehopf/mlat-client/tags?per_page=100" --jq '.[].name' | sort -V | tail -1)
 
           echo "Latest versions:"
           echo "  Pi-hole: $latest_pihole"
           echo "  dump1090: $latest_dump1090"
           echo "  PiAware: $latest_piaware"
           echo "  gpsd: $latest_gpsd"
+          echo "  readsb: $latest_readsb"
+          echo "  tar1090: $latest_tar1090"
+          echo "  mlat-client: $latest_mlat"
 
-          if [ -z "$latest_pihole" ] || [ -z "$latest_dump1090" ] || [ -z "$latest_piaware" ] || [ -z "$latest_gpsd" ] || [ "$latest_gpsd" = "null" ]; then
+          if [ -z "$latest_pihole" ] || [ -z "$latest_dump1090" ] || [ -z "$latest_piaware" ] || [ -z "$latest_gpsd" ] || [ "$latest_gpsd" = "null" ] || [ -z "$latest_readsb" ] || [ -z "$latest_tar1090" ] || [ -z "$latest_mlat" ]; then
             echo "::error::Failed to fetch one or more latest versions"
             exit 1
           fi
+
+          # Bumps an addon's own config.yaml version (patch) once any bundled
+          # component it ships changes — keeps the addon version meaningful
+          # instead of silently unchanged across dependency-only updates.
+          bump_addon_version() {
+            local config_path=$1 current major minor patch
+            current=$(grep '^version:' "$config_path" | sed 's/version: *"\(.*\)"/\1/')
+            IFS='.' read -r major minor patch <<< "$current"
+            local new="${major}.${minor}.$((patch + 1))"
+            sed -i "s/^version: \"${current}\"/version: \"${new}\"/" "$config_path"
+            echo "$new"
+          }
 
           # Compare and build update summary
           updates=""
           title_parts=""
           has_updates=false
+          pihole_changed=false
+          piaware_changed=false
+          gpsd_changed=false
+          ultrafeeder_changed=false
 
           if [ "$current_pihole" != "$latest_pihole" ]; then
             has_updates=true
+            pihole_changed=true
             updates="${updates}- **Pi-hole**: \`${current_pihole}\` → \`${latest_pihole}\`\n"
             title_parts="${title_parts}Pi-hole to ${latest_pihole}, "
             sed -i "s/PIHOLE_VERSION: \"${current_pihole}\"/PIHOLE_VERSION: \"${latest_pihole}\"/" pihole/build.yaml
             sed -i "s/ARG PIHOLE_VERSION=${current_pihole}/ARG PIHOLE_VERSION=${latest_pihole}/" pihole/Dockerfile
+            sed -i "s/PIHOLE_VERSION=${current_pihole}/PIHOLE_VERSION=${latest_pihole}/" .github/workflows/build.yml
+            sed -i "s#| Pi-hole.*|#| Pi-hole   | ${latest_pihole} |#" pihole/DOCS.md
           fi
 
+          # dump1090 and piaware_builder are bundled by both piaware and
+          # ultrafeeder — keep both addons' pins and docs in sync.
           if [ "$current_dump1090" != "$latest_dump1090" ]; then
             has_updates=true
+            piaware_changed=true
+            ultrafeeder_changed=true
             updates="${updates}- **dump1090**: \`${current_dump1090}\` → \`${latest_dump1090}\`\n"
             title_parts="${title_parts}dump1090 to ${latest_dump1090}, "
             sed -i "s/DUMP1090_VERSION: \"${current_dump1090}\"/DUMP1090_VERSION: \"${latest_dump1090}\"/" piaware/build.yaml
             sed -i "s/ARG DUMP1090_VERSION=${current_dump1090}/ARG DUMP1090_VERSION=${latest_dump1090}/" piaware/Dockerfile
+            sed -i "s#| dump1090 (aircraft DB).*|#| dump1090 (aircraft DB)      | ${latest_dump1090} |#" piaware/DOCS.md
+            sed -i "s/DUMP1090_VERSION: \"${current_dump1090}\"/DUMP1090_VERSION: \"${latest_dump1090}\"/" ultrafeeder/build.yaml
+            sed -i "s/ARG DUMP1090_VERSION=${current_dump1090}/ARG DUMP1090_VERSION=${latest_dump1090}/" ultrafeeder/Dockerfile
+            sed -i "s#| dump1090 (aircraft DB).*|#| dump1090 (aircraft DB)     | ${latest_dump1090} |#" ultrafeeder/DOCS.md
+            sed -i "s/DUMP1090_VERSION=${current_dump1090}/DUMP1090_VERSION=${latest_dump1090}/" .github/workflows/build.yml
           fi
 
           if [ "$current_piaware" != "$latest_piaware" ]; then
             has_updates=true
+            piaware_changed=true
+            ultrafeeder_changed=true
             updates="${updates}- **PiAware**: \`${current_piaware}\` → \`${latest_piaware}\`\n"
             title_parts="${title_parts}PiAware to ${latest_piaware}, "
             sed -i "s/PIAWARE_BUILDER_VERSION: \"${current_piaware}\"/PIAWARE_BUILDER_VERSION: \"${latest_piaware}\"/" piaware/build.yaml
             sed -i "s/ARG PIAWARE_BUILDER_VERSION=${current_piaware}/ARG PIAWARE_BUILDER_VERSION=${latest_piaware}/" piaware/Dockerfile
+            sed -i "s#| PiAware (piaware_builder).*|#| PiAware (piaware_builder)   | ${latest_piaware} |#" piaware/DOCS.md
+            sed -i "s/PIAWARE_BUILDER_VERSION: \"${current_piaware}\"/PIAWARE_BUILDER_VERSION: \"${latest_piaware}\"/" ultrafeeder/build.yaml
+            sed -i "s/ARG PIAWARE_BUILDER_VERSION=${current_piaware}/ARG PIAWARE_BUILDER_VERSION=${latest_piaware}/" ultrafeeder/Dockerfile
+            sed -i "s#| PiAware (piaware_builder).*|#| PiAware (piaware_builder)  | ${latest_piaware} |#" ultrafeeder/DOCS.md
+            sed -i "s/PIAWARE_BUILDER_VERSION=${current_piaware}/PIAWARE_BUILDER_VERSION=${latest_piaware}/" .github/workflows/build.yml
           fi
 
           if [ "$current_gpsd" != "$latest_gpsd" ]; then
             has_updates=true
+            gpsd_changed=true
             updates="${updates}- **gpsd**: \`${current_gpsd}\` → \`${latest_gpsd}\`\n"
             title_parts="${title_parts}gpsd to ${latest_gpsd}, "
             sed -i "s/GPSD_VERSION: \"${current_gpsd}\"/GPSD_VERSION: \"${latest_gpsd}\"/" gpsd/build.yaml
+            sed -i "s/ARG GPSD_VERSION=${current_gpsd}/ARG GPSD_VERSION=${latest_gpsd}/" gpsd/Dockerfile
             sed -i "s/GPSD_VERSION=${current_gpsd}/GPSD_VERSION=${latest_gpsd}/" .github/workflows/build.yml
+            sed -i "s#| gpsd.*|#| gpsd      | ${latest_gpsd} |#" gpsd/DOCS.md
+          fi
+
+          if [ "$current_readsb" != "$latest_readsb" ]; then
+            has_updates=true
+            ultrafeeder_changed=true
+            updates="${updates}- **readsb**: \`${current_readsb}\` → \`${latest_readsb}\`\n"
+            title_parts="${title_parts}readsb to ${latest_readsb}, "
+            sed -i "s/READSB_VERSION: \"${current_readsb}\"/READSB_VERSION: \"${latest_readsb}\"/" ultrafeeder/build.yaml
+            sed -i "s/ARG READSB_VERSION=${current_readsb}/ARG READSB_VERSION=${latest_readsb}/" ultrafeeder/Dockerfile
+            sed -i "s/READSB_VERSION=${current_readsb}/READSB_VERSION=${latest_readsb}/" .github/workflows/build.yml
+            sed -i "s#| readsb.*|#| readsb                     | ${latest_readsb} |#" ultrafeeder/DOCS.md
+          fi
+
+          # tar1090 has no upstream version tags — tracked and pinned by commit SHA
+          if [ "$current_tar1090" != "$latest_tar1090" ]; then
+            has_updates=true
+            ultrafeeder_changed=true
+            updates="${updates}- **tar1090**: \`${current_tar1090:0:10}\` → \`${latest_tar1090:0:10}\`\n"
+            title_parts="${title_parts}tar1090 to ${latest_tar1090:0:10}, "
+            sed -i "s/TAR1090_VERSION: \"${current_tar1090}\"/TAR1090_VERSION: \"${latest_tar1090}\"/" ultrafeeder/build.yaml
+            sed -i "s/ARG TAR1090_VERSION=${current_tar1090}/ARG TAR1090_VERSION=${latest_tar1090}/" ultrafeeder/Dockerfile
+            sed -i "s/TAR1090_VERSION=${current_tar1090}/TAR1090_VERSION=${latest_tar1090}/" .github/workflows/build.yml
+            sed -i "s#| tar1090.*|#| tar1090                    | ${latest_tar1090} |#" ultrafeeder/DOCS.md
+          fi
+
+          if [ "$current_mlat" != "$latest_mlat" ]; then
+            has_updates=true
+            ultrafeeder_changed=true
+            updates="${updates}- **mlat-client**: \`${current_mlat}\` → \`${latest_mlat}\`\n"
+            title_parts="${title_parts}mlat-client to ${latest_mlat}, "
+            sed -i "s/MLAT_CLIENT_VERSION: \"${current_mlat}\"/MLAT_CLIENT_VERSION: \"${latest_mlat}\"/" ultrafeeder/build.yaml
+            sed -i "s/ARG MLAT_CLIENT_VERSION=${current_mlat}/ARG MLAT_CLIENT_VERSION=${latest_mlat}/" ultrafeeder/Dockerfile
+            sed -i "s/MLAT_CLIENT_VERSION=${current_mlat}/MLAT_CLIENT_VERSION=${latest_mlat}/" .github/workflows/build.yml
+            sed -i "s#| mlat-client.*|#| mlat-client                | ${latest_mlat} |#" ultrafeeder/DOCS.md
+          fi
+
+          # Bump each addon's own version once, if any bundled component it ships changed
+          if [ "$pihole_changed" = true ]; then
+            new_version=$(bump_addon_version pihole/config.yaml)
+            updates="${updates}- **Pi-hole add-on version**: bumped to \`${new_version}\`\n"
+          fi
+          if [ "$piaware_changed" = true ]; then
+            new_version=$(bump_addon_version piaware/config.yaml)
+            updates="${updates}- **PiAware add-on version**: bumped to \`${new_version}\`\n"
+          fi
+          if [ "$gpsd_changed" = true ]; then
+            new_version=$(bump_addon_version gpsd/config.yaml)
+            updates="${updates}- **gpsd add-on version**: bumped to \`${new_version}\`\n"
+          fi
+          if [ "$ultrafeeder_changed" = true ]; then
+            new_version=$(bump_addon_version ultrafeeder/config.yaml)
+            updates="${updates}- **Ultrafeeder add-on version**: bumped to \`${new_version}\`\n"
           fi
 
           echo "has_updates=$has_updates" >> "$GITHUB_OUTPUT"

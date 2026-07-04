@@ -4,6 +4,18 @@ Exposes a USB GPS device over the standard gpsd TCP protocol (port 2947) and opt
 
 Other addons (such as PiAware) can connect to gpsd on port 2947 to obtain live position data without requiring manual lat/lon configuration.
 
+## Component versions
+
+This add-on currently bundles:
+
+| Component | Version        |
+| --------- | -------------- |
+| gpsd      | release-3.27.5 |
+
+The addon's own version (see `config.yaml`) is bumped separately from the
+bundled component version above — see the root [README](../README.md) for
+how the two relate.
+
 ## Requirements
 
 - A USB GPS receiver (NMEA 0183 or compatible). Common chipsets: u-blox, SiRF, MTK.

@@ -9,6 +9,19 @@ receiver stack for tracking aircraft. It includes:
 - **PiAware**: Feeds decoded data to FlightAware
 - **SkyAware**: Web-based aircraft map accessible through Home Assistant
 
+## Component versions
+
+This add-on currently bundles:
+
+| Component                  | Version |
+| --------------------------- | ------- |
+| dump1090 (aircraft DB)      | v9.0    |
+| PiAware (piaware_builder)   | v9.0.1  |
+
+The addon's own version (see `config.yaml`) is bumped separately from the
+bundled component versions above — see the root [README](../README.md) for
+how the two relate.
+
 ## Prerequisites
 
 - An RTL-SDR USB dongle (e.g., FlightAware Pro Stick, generic RTL2832U)
