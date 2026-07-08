@@ -12,7 +12,7 @@ This add-on currently bundles:
 
 | Component | Version   |
 | --------- | --------- |
-| Pi-hole   | 2026.02.0 |
+| Pi-hole   | 2026.07.2 |
 
 The addon's own version (see `config.yaml`) is bumped separately from the
 bundled component version above — see the root [README](../README.md) for
